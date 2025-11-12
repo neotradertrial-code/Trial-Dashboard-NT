@@ -573,7 +573,7 @@ def calculate_metrics_archive(df: pd.DataFrame) -> dict:
     tt = metrics['total_trades'] or 0
     metrics['hit_rate'] = (metrics['winning_trades'] / tt * 100) if tt else 0.0
     for i in [1, 2, 3]:
-        m = int(s.str.contains(f'T{i} MET', regex=False, na=False).sum())
+        m = int(s.str_contains(f'T{i} MET', regex=False, na=False).sum()) if hasattr(s, 'str_contains') else int(s.str.contains(f'T{i} MET', regex=False, na=False).sum())
         metrics[f'target{i}_met'] = m
         metrics[f'target{i}_rate'] = (m / tt * 100) if tt else 0.0
     return metrics
@@ -1009,7 +1009,6 @@ if selected_file_name:
                         z=heatmap_data.values, x=heatmap_data.columns, y=heatmap_data.index,
                         colorscale=custom_colorscale,
                         text=heatmap_data.values, texttemplate='%{text}',
-                        # >>> FIXED LINE: use single braces for a dict, not {{ ... }}
                         textfont={"size": 14, "color": "white", "family": "Arial Black"},
                         hovertemplate='<b>Strategy</b>: %{y}<br><b>Timeframe</b>: %{x}<br><b>Trades</b>: %{z}<extra></extra>',
                         colorbar=dict(title="Trades", thickness=18, bgcolor=SURFACE_ALT, bordercolor=BORDER_RGBA, borderwidth=1)
@@ -1330,19 +1329,15 @@ if selected_file_name:
                         top_winners['PNL_num'] = pd.to_numeric(top_winners[PNL_COL], errors='coerce')
                         top_winners = top_winners.nlargest(10, 'PNL_num')[[symbol_col, PNL_COL, 'TRADE' if 'TRADE' in filtered_df.columns else symbol_col]]
                         st.markdown("#### 🥇 Top 10 Winning Trades")
-                        st.dataframe(
-                            top_winners.style.background_gradient(subset=[PNL_COL], cmap='Greens'),
-                            use_container_width=True, hide_index=True, height=400
-                        )
+                        # >>> CHANGED: remove Styler gradient (matplotlib dependency)
+                        st.dataframe(top_winners, use_container_width=True, hide_index=True)
                     with top_col2:
                         top_losers = filtered_df.copy()
                         top_losers['PNL_num'] = pd.to_numeric(top_losers[PNL_COL], errors='coerce')
                         top_losers = top_losers.nsmallest(10, 'PNL_num')[[symbol_col, PNL_COL, 'TRADE' if 'TRADE' in filtered_df.columns else symbol_col]]
                         st.markdown("#### 📉 Top 10 Losing Trades")
-                        st.dataframe(
-                            top_losers.style.background_gradient(subset=[PNL_COL], cmap='Reds_r'),
-                            use_container_width=True, hide_index=True, height=400
-                        )
+                        # >>> CHANGED: remove Styler gradient (matplotlib dependency)
+                        st.dataframe(top_losers, use_container_width=True, hide_index=True)
 
         # TAB 4: Time-Based Analysis
         with pnl_tabs[3]:
