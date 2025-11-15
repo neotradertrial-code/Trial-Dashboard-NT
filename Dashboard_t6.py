@@ -573,7 +573,7 @@ def calculate_metrics_archive(df: pd.DataFrame) -> dict:
     tt = metrics['total_trades'] or 0
     metrics['hit_rate'] = (metrics['winning_trades'] / tt * 100) if tt else 0.0
     for i in [1, 2, 3]:
-        m = int(s.str_contains(f'T{i} MET', regex=False, na=False).sum()) if hasattr(s, 'str_contains') else int(s.str.contains(f'T{i} MET', regex=False, na=False).sum())
+        m = int(s.str.contains(f'T{i} MET', regex=False, na=False).sum())
         metrics[f'target{i}_met'] = m
         metrics[f'target{i}_rate'] = (m / tt * 100) if tt else 0.0
     return metrics
@@ -1087,36 +1087,41 @@ if selected_file_name:
         </div>
         """, unsafe_allow_html=True)
 
+        # 1st row: Win Rate – Winning Trades – Losing Trades – Total Trades – Profit Factor
         pnl_col1, pnl_col2, pnl_col3, pnl_col4, pnl_col5 = st.columns(5)
         with pnl_col1:
-            pnl_val = pnl_metrics['total_pnl']
-            st.metric("Total P&L", f"₹{pnl_val:,.2f}",
-                      delta="Profit" if pnl_val > 0 else "Loss",
-                      delta_color="normal" if pnl_val > 0 else "inverse")
-        with pnl_col2:
-            st.metric("Total Trades", f"{pnl_metrics['total_trades']:,}")
-        with pnl_col3:
             st.metric("Win Rate", f"{pnl_metrics['win_rate']:.1f}%",
                       delta=f"{pnl_metrics['winning_trades']:,} wins")
-        with pnl_col4:
-            st.metric("Profit Factor", f"{pnl_metrics['profit_factor']:.2f}")
-        with pnl_col5:
-            st.metric("Sharpe Ratio", f"{pnl_metrics['sharpe_ratio']:.2f}")
-
-        pnl_col6, pnl_col7, pnl_col8, pnl_col9, pnl_col10 = st.columns(5)
-        with pnl_col6:
+        with pnl_col2:
             st.metric("Winning Trades", f"{pnl_metrics['winning_trades']:,}")
-        with pnl_col7:
+        with pnl_col3:
             st.metric("Losing Trades", f"{pnl_metrics['losing_trades']:,}",
                       delta=f"-{pnl_metrics['losing_trades']:,}", delta_color="inverse")
+        with pnl_col4:
+            st.metric("Total Trades", f"{pnl_metrics['total_trades']:,}")
+        with pnl_col5:
+            st.metric("Profit Factor", f"{pnl_metrics['profit_factor']:.2f}")
+
+        # 2nd row: Total P&L – Avg Winner – Avg Loser – Max Drawdown % – Sharpe Ratio
+        pnl_col6, pnl_col7, pnl_col8, pnl_col9, pnl_col10 = st.columns(5)
+        with pnl_col6:
+            pnl_val = pnl_metrics['total_pnl']
+            st.metric("Total P&L", f"₹{pnl_val:,.0f}",
+                      delta="Profit" if pnl_val > 0 else "Loss",
+                      delta_color="normal" if pnl_val > 0 else "inverse")
+        with pnl_col7:
+            st.metric("Avg Winner", f"₹{pnl_metrics['avg_win']:,.0f}")
         with pnl_col8:
-            st.metric("Avg Win", f"₹{pnl_metrics['avg_win']:,.2f}")
+            st.metric("Avg Loser", f"₹{pnl_metrics['avg_loss']:,.0f}",
+                      delta=f"-₹{pnl_metrics['avg_loss']:,.0f}", delta_color="inverse")
         with pnl_col9:
-            st.metric("Avg Loss", f"₹{pnl_metrics['avg_loss']:,.2f}",
-                      delta=f"-₹{pnl_metrics['avg_loss']:,.2f}", delta_color="inverse")
+            max_dd = pnl_metrics['max_drawdown']
+            peak_pnl = max(pnl_metrics['total_pnl'], 1)
+            dd_pct = (max_dd / peak_pnl * 100) if peak_pnl > 0 else 0
+            st.metric("Max Drawdown", f"{dd_pct:.1f}%",
+                      delta=f"₹{max_dd:,.0f}", delta_color="inverse")
         with pnl_col10:
-            st.metric("Max Drawdown", f"₹{pnl_metrics['max_drawdown']:,.2f}",
-                      delta="Risk", delta_color="inverse")
+            st.metric("Sharpe Ratio", f"{pnl_metrics['sharpe_ratio']:.2f}")
 
         st.markdown(f"""
         <div style='text-align: center; margin: 28px 0 12px 0;'>
@@ -1275,9 +1280,62 @@ if selected_file_name:
         with pnl_tabs[2]:
             dist_col1, dist_col2 = st.columns(2)
             with dist_col1:
+                if 'STATUS' in filtered_df.columns and not filtered_df.empty:
+                    status_series = filtered_df['STATUS'].astype(str).str.upper().str.strip()
+
+                    # New logic:
+                    # T1 = T1 + T2 + T3
+                    # T2 = T2 + T3
+                    # T3 = T3 only
+                    # SL = SL only
+                    t1_all = status_series.str.contains('T1 MET|T2 MET|T3 MET', regex=True, na=False).sum()
+                    t2_plus = status_series.str.contains('T2 MET|T3 MET', regex=True, na=False).sum()
+                    t3_only = status_series.str.contains('T3 MET', regex=False, na=False).sum()
+                    sl_met  = status_series.str.contains('SL MET', regex=False, na=False).sum()
+
+                    categories = ["T1 & Above (T1+T2+T3)", "T2 & Above (T2+T3)", "T3 Only", "SL Met"]
+                    counts = [t1_all, t2_plus, t3_only, sl_met]
+
+                    colors = [
+                        ANALYTICS_GRADIENT_GREEN[3],  # T1 & Above - medium green
+                        ANALYTICS_GRADIENT_GREEN[5],  # T2 & Above - brighter green
+                        ANALYTICS_GRADIENT_GREEN[6],  # T3 Only - brightest green
+                        ANALYTICS_GRADIENT_ORANGE[5]  # SL Met - orange-red
+                    ]
+
+                    fig_trade_dist = go.Figure(
+                        data=[
+                            go.Bar(
+                                x=categories,
+                                y=counts,
+                                marker=dict(
+                                    color=colors,
+                                        line=dict(color=BG_END, width=2)
+                                ),
+                                text=counts,
+                                textposition='outside',
+                                hovertemplate='<b>%{x}</b><br>Count: %{y}<extra></extra>'
+                            )
+                        ]
+                    )
+
+                    fig_trade_dist.update_layout(
+                        title={'text': "🎯 Trade Distribution by Target (Histogram View)", 'x': 0.5, 'xanchor': 'center'},
+                        xaxis_title="Target Buckets",
+                        yaxis_title="Number of Trades",
+                        height=450,
+                        xaxis=dict(gridcolor='#374151', showgrid=False),
+                        yaxis=dict(gridcolor='#374151', showgrid=True)
+                    )
+
+                    st.plotly_chart(fig_trade_dist, use_container_width=True)
+
+
+
+            with dist_col2:
                 if 'TRADE' in filtered_df.columns and not filtered_df.empty:
                     trade_counts = filtered_df['TRADE'].value_counts()
-                    fig_trade = go.Figure(data=[go.Pie(
+                    fig_trade_type = go.Figure(data=[go.Pie(
                         labels=trade_counts.index, values=trade_counts.values, hole=0.5,
                         marker=dict(
                             colors=ANALYTICS_PIE_COLORS[:len(trade_counts)],
@@ -1286,37 +1344,11 @@ if selected_file_name:
                         textposition='inside', textinfo='label+percent',
                         hovertemplate='<b>%{label}</b><br>Count: %{value}<br>%{percent}<extra></extra>'
                     )])
-                    fig_trade.update_layout(
+                    fig_trade_type.update_layout(
                         title={'text': "📈 Trade Type Distribution", 'x': 0.5, 'xanchor': 'center'},
                         height=450, showlegend=True
                     )
-                    st.plotly_chart(fig_trade, use_container_width=True)
-
-            with dist_col2:
-                if 'STATUS' in filtered_df.columns and not filtered_df.empty:
-                    status_counts = filtered_df['STATUS'].value_counts()
-                    colors = []
-                    for lbl in status_counts.index.astype(str):
-                        L = lbl.upper()
-                        if 'SL MET' in L:
-                            colors.append(ANALYTICS_GRADIENT_ORANGE[5])
-                        elif any(x in L for x in ['T1 MET', 'T2 MET', 'T3 MET']):
-                            colors.append(ANALYTICS_GRADIENT_GREEN[5])
-                        else:
-                            colors.append(ANALYTICS_GRADIENT_BLUE[3])
-                    fig_status = go.Figure(go.Bar(
-                        x=status_counts.index, y=status_counts.values,
-                        text=status_counts.values, textposition='outside',
-                        marker=dict(color=colors, line=dict(color=BG_END, width=1)),
-                        hovertemplate='<b>%{x}</b><br>Count: %{y}<extra></extra>'
-                    ))
-                    fig_status.update_layout(
-                        title={'text': "🎯 Status Distribution", 'x': 0.5, 'xanchor': 'center'},
-                        xaxis_title="", yaxis_title="Count", height=450,
-                        xaxis=dict(gridcolor='#374151', tickangle=-45),
-                        yaxis=dict(gridcolor='#374151', showgrid=True)
-                    )
-                    st.plotly_chart(fig_status, use_container_width=True)
+                    st.plotly_chart(fig_trade_type, use_container_width=True)
 
             if PNL_COL in filtered_df.columns and not filtered_df.empty:
                 st.markdown("---")
@@ -1329,15 +1361,19 @@ if selected_file_name:
                         top_winners['PNL_num'] = pd.to_numeric(top_winners[PNL_COL], errors='coerce')
                         top_winners = top_winners.nlargest(10, 'PNL_num')[[symbol_col, PNL_COL, 'TRADE' if 'TRADE' in filtered_df.columns else symbol_col]]
                         st.markdown("#### 🥇 Top 10 Winning Trades")
-                        # >>> CHANGED: remove Styler gradient (matplotlib dependency)
-                        st.dataframe(top_winners, use_container_width=True, hide_index=True)
+                        st.dataframe(
+                            top_winners.style.background_gradient(subset=[PNL_COL], cmap='Greens'),
+                            use_container_width=True, hide_index=True, height=400
+                        )
                     with top_col2:
                         top_losers = filtered_df.copy()
                         top_losers['PNL_num'] = pd.to_numeric(top_losers[PNL_COL], errors='coerce')
                         top_losers = top_losers.nsmallest(10, 'PNL_num')[[symbol_col, PNL_COL, 'TRADE' if 'TRADE' in filtered_df.columns else symbol_col]]
                         st.markdown("#### 📉 Top 10 Losing Trades")
-                        # >>> CHANGED: remove Styler gradient (matplotlib dependency)
-                        st.dataframe(top_losers, use_container_width=True, hide_index=True)
+                        st.dataframe(
+                            top_losers.style.background_gradient(subset=[PNL_COL], cmap='Reds_r'),
+                            use_container_width=True, hide_index=True, height=400
+                        )
 
         # TAB 4: Time-Based Analysis
         with pnl_tabs[3]:
@@ -1347,34 +1383,14 @@ if selected_file_name:
                 df_time_pnl['PNL_num'] = pd.to_numeric(df_time_pnl[PNL_COL], errors='coerce')
                 df_time_pnl = df_time_pnl.sort_values(date_col_pnl)
 
-                # Daily P&L
-                df_time_pnl['Date'] = pd.to_datetime(df_time_pnl[date_col_pnl]).dt.date
-                daily_pnl = df_time_pnl.groupby('Date')['PNL_num'].sum().reset_index()
-                colors = [ANALYTICS_GRADIENT_GREEN[5] if x >= 0 else ANALYTICS_GRADIENT_ORANGE[5] for x in daily_pnl['PNL_num']]
-                fig_daily = go.Figure()
-                fig_daily.add_trace(go.Bar(
-                    x=daily_pnl['Date'], y=daily_pnl['PNL_num'],
-                    marker=dict(color=colors, line=dict(color=BG_END, width=1)),
-                    hovertemplate='<b>Date</b>: %{x}<br><b>P&L</b>: ₹%{y:,.2f}<extra></extra>'
-                ))
-                fig_daily.add_hline(y=0, line_dash="dash", line_color=TEXT_MUTED, line_width=1)
-                fig_daily.update_layout(
-                    title={'text': "📅 Daily P&L", 'x': 0.5, 'xanchor': 'center'},
-                    xaxis_title="Date", yaxis_title="P&L (₹)", height=500,
-                    xaxis=dict(gridcolor='#374151', showgrid=True),
-                    yaxis=dict(gridcolor='#374151', showgrid=True),
-                    hovermode='x unified'
-                )
-                st.plotly_chart(fig_daily, use_container_width=True)
-
-                # Monthly Performance
+                # Monthly Performance & Trade Count
                 df_time_pnl['Month'] = pd.to_datetime(df_time_pnl[date_col_pnl]).dt.to_period('M').astype(str)
                 monthly_pnl = df_time_pnl.groupby('Month').agg({'PNL_num': ['sum', 'count', 'mean']}).reset_index()
                 monthly_pnl.columns = ['Month', 'Total_PNL', 'Trade_Count', 'Avg_PNL']
 
                 fig_monthly = make_subplots(
                     rows=2, cols=1,
-                    subplot_titles=("💰 Monthly P&L", "📊 Trade Count"),
+                    subplot_titles=("💰 Monthly Performance", "📊 Trade Count"),
                     row_heights=[0.6, 0.4], vertical_spacing=0.15
                 )
                 colors_monthly = [ANALYTICS_GRADIENT_GREEN[5] if x >= 0 else ANALYTICS_GRADIENT_ORANGE[5] for x in monthly_pnl['Total_PNL']]
@@ -1392,12 +1408,33 @@ if selected_file_name:
                     row=2, col=1
                 )
                 fig_monthly.update_layout(
-                    title={'text': "📈 Monthly Performance Summary", 'x': 0.5, 'xanchor': 'center'},
+                    title={'text': "📈 Monthly Performance & Trade Count", 'x': 0.5, 'xanchor': 'center'},
                     height=700, showlegend=False
                 )
                 fig_monthly.update_xaxes(gridcolor='#374151', showgrid=True)
                 fig_monthly.update_yaxes(gridcolor='#374151', showgrid=True)
                 st.plotly_chart(fig_monthly, use_container_width=True)
+
+                # Daily P&L (Optional)
+                st.markdown("---")
+                df_time_pnl['Date'] = pd.to_datetime(df_time_pnl[date_col_pnl]).dt.date
+                daily_pnl = df_time_pnl.groupby('Date')['PNL_num'].sum().reset_index()
+                colors_daily = [ANALYTICS_GRADIENT_GREEN[5] if x >= 0 else ANALYTICS_GRADIENT_ORANGE[5] for x in daily_pnl['PNL_num']]
+                fig_daily = go.Figure()
+                fig_daily.add_trace(go.Bar(
+                    x=daily_pnl['Date'], y=daily_pnl['PNL_num'],
+                    marker=dict(color=colors_daily, line=dict(color=BG_END, width=1)),
+                    hovertemplate='<b>Date</b>: %{x}<br><b>P&L</b>: ₹%{y:,.2f}<extra></extra>'
+                ))
+                fig_daily.add_hline(y=0, line_dash="dash", line_color=TEXT_MUTED, line_width=1)
+                fig_daily.update_layout(
+                    title={'text': "📅 Daily P&L", 'x': 0.5, 'xanchor': 'center'},
+                    xaxis_title="Date", yaxis_title="P&L (₹)", height=500,
+                    xaxis=dict(gridcolor='#374151', showgrid=True),
+                    yaxis=dict(gridcolor='#374151', showgrid=True),
+                    hovermode='x unified'
+                )
+                st.plotly_chart(fig_daily, use_container_width=True)
             else:
                 st.info("No date column detected for time-based P&L analysis.")
 
