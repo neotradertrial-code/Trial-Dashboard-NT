@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import io
 import json
+
 import os
 from pathlib import Path
 from typing import Optional, List, Tuple, Dict
@@ -268,7 +269,7 @@ def _load_service_account_info():
         st.error("SERVICE_ACCOUNT_INFO not found in secrets.")
         st.stop()
 
-# --------------------------- Optimized Functions (unchanged logic) ---------------------------
+# --------------------------- Optimized Functions (unchanged logic except ROI/MARGIN) ---------------------------
 @st.cache_data(show_spinner=False)
 def calculate_metrics_pnl(df: pd.DataFrame, col: str = PNL_COL) -> dict:
     metrics = {
@@ -281,11 +282,15 @@ def calculate_metrics_pnl(df: pd.DataFrame, col: str = PNL_COL) -> dict:
         'win_rate': 0.0,
         'profit_factor': 0.0,
         'max_drawdown': 0.0,
-        'sharpe_ratio': 0.0
+        'sharpe_ratio': 0.0,
+        # NEW: Margin & ROI metrics
+        'total_margin': 0.0,
+        'roi': 0.0
     }
     if df is None or df.empty or col not in df.columns:
         return metrics
 
+    # P&L calculations
     pnl_series = pd.to_numeric(df[col], errors='coerce').fillna(0.0)
     metrics['total_pnl'] = float(pnl_series.sum())
     metrics['winning_trades'] = int((pnl_series > 0).sum())
@@ -310,6 +315,20 @@ def calculate_metrics_pnl(df: pd.DataFrame, col: str = PNL_COL) -> dict:
 
     if len(pnl_series) > 1 and float(pnl_series.std()) != 0:
         metrics['sharpe_ratio'] = float((pnl_series.mean() / pnl_series.std()) * np.sqrt(252))
+
+    # NEW: Margin sum & ROI based on filtered data
+    # NEW: Peak Margin & ROI based on filtered (visible) data
+    if 'MARGIN_REQ' in df.columns:
+        margin_series = pd.to_numeric(df['MARGIN_REQ'], errors='coerce').fillna(0.0)
+
+        # 👇 Peak margin during the selected period (NOT sum)
+        peak_margin = float(margin_series.max())
+
+        metrics['total_margin'] = peak_margin
+        if peak_margin > 0:
+            metrics['roi'] = (metrics['total_pnl'] / peak_margin) * 100.0
+
+
     return metrics
 
 @st.cache_resource
@@ -1123,6 +1142,19 @@ if selected_file_name:
         with pnl_col10:
             st.metric("Sharpe Ratio", f"{pnl_metrics['sharpe_ratio']:.2f}")
 
+        # NEW 3rd row: Margin & ROI (keeps all old metrics intact) 
+        pnl_col11, pnl_col12 = st.columns(2)
+        with pnl_col11:
+            st.metric("Peak Margin Required", f"₹{pnl_metrics['total_margin']:,.0f}",
+                      help="Maximum combined margin used at any point in the selected period")
+        with pnl_col12:
+            st.metric(
+                "ROI on Margin",
+                f"{pnl_metrics['roi']:.1f}%",
+                help="Total P&L ÷ Peak Margin Required × 100 for the filtered period"
+            )
+
+
         st.markdown(f"""
         <div style='text-align: center; margin: 28px 0 12px 0;'>
             <h2 style='
@@ -1310,7 +1342,7 @@ if selected_file_name:
                                 y=counts,
                                 marker=dict(
                                     color=colors,
-                                        line=dict(color=BG_END, width=2)
+                                    line=dict(color=BG_END, width=2)
                                 ),
                                 text=counts,
                                 textposition='outside',
@@ -1329,8 +1361,6 @@ if selected_file_name:
                     )
 
                     st.plotly_chart(fig_trade_dist, use_container_width=True)
-
-
 
             with dist_col2:
                 if 'TRADE' in filtered_df.columns and not filtered_df.empty:
