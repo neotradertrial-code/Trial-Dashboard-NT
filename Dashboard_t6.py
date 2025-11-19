@@ -1214,18 +1214,7 @@ if selected_file_name:
                     fig_equity.update_xaxes(gridcolor='#374151', showgrid=True)
                     fig_equity.update_yaxes(gridcolor='#374151', showgrid=True)
                     st.plotly_chart(fig_equity, use_container_width=True)
-
-                    eq_col1, eq_col2, eq_col3, eq_col4 = st.columns(4)
-                    with eq_col1:
-                        st.metric("Peak P&L", f"₹{df_equity['Cumulative_PNL'].max():,.2f}")
-                    with eq_col2:
-                        st.metric("Lowest P&L", f"₹{df_equity['Cumulative_PNL'].min():,.2f}")
-                    with eq_col3:
-                        st.metric("Final P&L", f"₹{df_equity['Cumulative_PNL'].iloc[-1]:,.2f}")
-                    with eq_col4:
-                        max_dd = df_equity['Drawdown'].min()
-                        peak = max(df_equity['Cumulative_PNL'].max(), 1)
-                        st.metric("Max Drawdown", f"₹{max_dd:,.2f}", delta=f"{(max_dd/peak*100):.1f}%", delta_color="inverse")
+                    
                 else:
                     st.warning("📅 No date column found for equity curve visualization")
             else:
@@ -1493,3 +1482,4 @@ st.markdown(f"""
     </p>
 </div>
 """, unsafe_allow_html=True)
+
