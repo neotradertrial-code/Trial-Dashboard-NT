@@ -668,6 +668,43 @@ if selected_file_name:
 
     st.success(f"✅ Loaded {len(df):,} records from {selected_file_name} (cached)", icon="🚀")
 
+    # ================== Rename Strategy / SCAN_NAME labels (no filtering) ==================
+    if 'SCAN_NAME' in df.columns:
+        df = df.copy()
+
+        # Normalise original names to make matching robust
+        norm = (
+            df['SCAN_NAME']
+            .astype(str)
+            .str.strip()
+            .str.upper()
+            .str.replace(' ', '-', regex=False)  # "BB SQUEEZE TRIDENT" → "BB-SQUEEZE-TRIDENT"
+        )
+
+        rename_map = {
+            "ROS": "OPT 1",
+            "BBR": "INDEX 3",
+            "RBB": "INDEX 4",
+            "RD": "INDEX 2",
+            "OPENING-GAP": "BREAKOUT 1",
+            "TRIDENT": "MOMENTUM 1",
+            "SWING": "SWING 1",
+            "RANGE": "BREAKOUT 2",
+            "BB-SQUEEZE": "BREAKOUT 3",
+            "BB-MACD": "MOMENTUM 2",
+            "ADX-EXHAUSTION": "REVERSAL 2",
+            "BB-EXHAUSTION": "REVERSAL 1",
+            "CANDLE-EXHAUSTION": "REVERSAL 3",
+            "BTST": "BTST 1",
+            "BB-SQUEEZE-TRIDENT": "INVEST",
+        }
+
+        mapped = norm.map(rename_map)
+
+        # Only replace where we have a mapping; everything else stays as-is
+        df.loc[mapped.notna(), 'SCAN_NAME'] = mapped[mapped.notna()].values
+    # ======================================================================
+
     # ============================= ARCHIVE DATA MODE =============================
     if data_mode == "Archive Data":
         filter_options = precompute_filter_options_archive(df)
@@ -1482,4 +1519,3 @@ st.markdown(f"""
     </p>
 </div>
 """, unsafe_allow_html=True)
-
