@@ -269,7 +269,7 @@ def _load_service_account_info():
         st.error("SERVICE_ACCOUNT_INFO not found in secrets.")
         st.stop()
 
-# --------------------------- Optimized Functions (unchanged logic except ROI/MARGIN) ---------------------------
+# --------------------------- Optimized Functions (PnL now uses capital-aware equity) ---------------------------
 @st.cache_data(show_spinner=False)
 def calculate_metrics_pnl(df: pd.DataFrame, col: str = PNL_COL) -> dict:
     metrics = {
@@ -283,14 +283,15 @@ def calculate_metrics_pnl(df: pd.DataFrame, col: str = PNL_COL) -> dict:
         'profit_factor': 0.0,
         'max_drawdown': 0.0,
         'sharpe_ratio': 0.0,
-        # NEW: Margin & ROI metrics
+        # Margin & capital metrics
         'total_margin': 0.0,
-        'roi': 0.0
+        'roi': 0.0,
+        'initial_capital': 0.0,  # 👈 treated as Peak Margin Required for selected filters
     }
     if df is None or df.empty or col not in df.columns:
         return metrics
 
-    # P&L calculations
+    # --- P&L series ---
     pnl_series = pd.to_numeric(df[col], errors='coerce').fillna(0.0)
     metrics['total_pnl'] = float(pnl_series.sum())
     metrics['winning_trades'] = int((pnl_series > 0).sum())
@@ -308,26 +309,32 @@ def calculate_metrics_pnl(df: pd.DataFrame, col: str = PNL_COL) -> dict:
     if gross_loss != 0:
         metrics['profit_factor'] = gross_profit / gross_loss
 
-    cumulative_pnl = pnl_series.cumsum()
-    running_max    = cumulative_pnl.cummax()
-    drawdown       = cumulative_pnl - running_max
-    metrics['max_drawdown'] = float(abs(drawdown.min()))
-
-    if len(pnl_series) > 1 and float(pnl_series.std()) != 0:
-        metrics['sharpe_ratio'] = float((pnl_series.mean() / pnl_series.std()) * np.sqrt(252))
-
-    # NEW: Margin sum & ROI based on filtered data
-    # NEW: Peak Margin & ROI based on filtered (visible) data
+    # --- Peak Margin = Initial Capital for this slice ---
     if 'MARGIN_REQ' in df.columns:
         margin_series = pd.to_numeric(df['MARGIN_REQ'], errors='coerce').fillna(0.0)
-
-        # 👇 Peak margin during the selected period (NOT sum)
-        peak_margin = float(margin_series.max())
-
+        peak_margin = float(margin_series.max())  # 👈 peak margin in the filtered period
         metrics['total_margin'] = peak_margin
+        metrics['initial_capital'] = peak_margin
+
         if peak_margin > 0:
             metrics['roi'] = (metrics['total_pnl'] / peak_margin) * 100.0
 
+    # --- Capital-aware equity curve & max drawdown ---
+    cumulative_pnl = pnl_series.cumsum()
+    initial_capital = metrics.get('initial_capital', 0.0)
+
+    if initial_capital > 0:
+        equity_curve = initial_capital + cumulative_pnl
+    else:
+        equity_curve = cumulative_pnl  # fallback
+
+    running_max    = equity_curve.cummax()
+    drawdown       = equity_curve - running_max
+    metrics['max_drawdown'] = float(abs(drawdown.min()))
+
+    # --- Sharpe (still based on raw P&L series) ---
+    if len(pnl_series) > 1 and float(pnl_series.std()) != 0:
+        metrics['sharpe_ratio'] = float((pnl_series.mean() / pnl_series.std()) * np.sqrt(252))
 
     return metrics
 
@@ -1172,25 +1179,37 @@ if selected_file_name:
                       delta=f"-₹{pnl_metrics['avg_loss']:,.0f}", delta_color="inverse")
         with pnl_col9:
             max_dd = pnl_metrics['max_drawdown']
-            peak_pnl = max(pnl_metrics['total_pnl'], 1)
-            dd_pct = (max_dd / peak_pnl * 100) if peak_pnl > 0 else 0
-            st.metric("Max Drawdown", f"{dd_pct:.1f}%",
-                      delta=f"₹{max_dd:,.0f}", delta_color="inverse")
+            initial_capital = pnl_metrics.get('initial_capital', 0.0)
+            if initial_capital > 0:
+                dd_pct = (max_dd / initial_capital) * 100.0
+            else:
+                peak_pnl = max(pnl_metrics['total_pnl'], 1)
+                dd_pct = (max_dd / peak_pnl * 100.0) if peak_pnl > 0 else 0.0
+
+            st.metric(
+                "Max Drawdown",
+                f"{dd_pct:.1f}%",
+                delta=f"₹{max_dd:,.0f}",
+                delta_color="inverse",
+                help="Maximum peak-to-trough fall of the equity curve, as a % of initial capital (Peak Margin)"
+            )
         with pnl_col10:
             st.metric("Sharpe Ratio", f"{pnl_metrics['sharpe_ratio']:.2f}")
 
         # NEW 3rd row: Margin & ROI (keeps all old metrics intact) 
         pnl_col11, pnl_col12 = st.columns(2)
         with pnl_col11:
-            st.metric("Peak Margin Required", f"₹{pnl_metrics['total_margin']:,.0f}",
-                      help="Maximum combined margin used at any point in the selected period")
+            st.metric(
+                "Peak Margin Required",
+                f"₹{pnl_metrics['total_margin']:,.0f}",
+                help="Maximum combined margin used at any point in the selected period (treated as Initial Capital)"
+            )
         with pnl_col12:
             st.metric(
                 "ROI on Margin",
                 f"{pnl_metrics['roi']:.1f}%",
                 help="Total P&L ÷ Peak Margin Required × 100 for the filtered period"
             )
-
 
         st.markdown(f"""
         <div style='text-align: center; margin: 28px 0 12px 0;'>
@@ -1206,7 +1225,7 @@ if selected_file_name:
 
         pnl_tabs = st.tabs(["💹 Equity Curve", "📊 Performance Analysis", "🎯 Trade Distribution", "📈 Time-Based Analysis"])
 
-        # TAB 1: Equity Curve
+        # TAB 1: Equity Curve (capital-aware)
         with pnl_tabs[0]:
             if PNL_COL in filtered_df.columns:
                 df_equity = filtered_df.copy()
@@ -1215,28 +1234,41 @@ if selected_file_name:
                     df_equity = df_equity.dropna(subset=[date_col_pnl, PNL_COL]).sort_values(date_col_pnl)
                     df_equity['PNL_num'] = pd.to_numeric(df_equity[PNL_COL], errors='coerce').fillna(0)
                     df_equity['Cumulative_PNL'] = df_equity['PNL_num'].cumsum()
-                    df_equity['Running_Max'] = df_equity['Cumulative_PNL'].cummax()
-                    df_equity['Drawdown'] = df_equity['Cumulative_PNL'] - df_equity['Running_Max']
+
+                    # 👇 Capital-aware equity
+                    initial_capital = pnl_metrics.get('initial_capital', 0.0)
+                    if initial_capital > 0:
+                        df_equity['Equity'] = initial_capital + df_equity['Cumulative_PNL']
+                    else:
+                        df_equity['Equity'] = df_equity['Cumulative_PNL']
+
+                    df_equity['Running_Max_Equity'] = df_equity['Equity'].cummax()
+                    df_equity['Drawdown_Equity'] = df_equity['Equity'] - df_equity['Running_Max_Equity']
 
                     fig_equity = make_subplots(
                         rows=2, cols=1, row_heights=[0.7, 0.3],
-                        subplot_titles=("💰 Cumulative P&L Equity Curve", "📉 Drawdown"),
+                        subplot_titles=("💰 Equity Curve (Capital + P&L)", "📉 Equity Drawdown"),
                         vertical_spacing=0.1
                     )
                     fig_equity.add_trace(
                         go.Scatter(
-                            x=df_equity[date_col_pnl], y=df_equity['Cumulative_PNL'],
-                            mode='lines', name='Cumulative P&L',
+                            x=df_equity[date_col_pnl], y=df_equity['Equity'],
+                            mode='lines', name='Equity Curve',
                             line=dict(width=3, color=ANALYTICS_GRADIENT_GREEN[5]),
                             fill='tozeroy',
-                            hovertemplate='<b>Date</b>: %{x}<br><b>P&L</b>: ₹%{y:,.2f}<extra></extra>'
+                            hovertemplate='<b>Date</b>: %{x}<br><b>Equity</b>: ₹%{y:,.2f}<extra></extra>'
                         ),
                         row=1, col=1
                     )
-                    fig_equity.add_hline(y=0, line_dash="dash", line_color=TEXT_MUTED, line_width=1, row=1, col=1)
+                    fig_equity.add_hline(y=initial_capital if initial_capital > 0 else 0,
+                                         line_dash="dash", line_color=TEXT_MUTED, line_width=1,
+                                         annotation_text="Initial Capital", annotation_position="top left",
+                                         row=1, col=1)
+
+                    # Drawdown curve with Max Drawdown annotation
                     fig_equity.add_trace(
                         go.Scatter(
-                            x=df_equity[date_col_pnl], y=df_equity['Drawdown'],
+                            x=df_equity[date_col_pnl], y=df_equity['Drawdown_Equity'],
                             mode='lines', name='Drawdown',
                             line=dict(color=ANALYTICS_GRADIENT_ORANGE[5], width=2),
                             fill='tozeroy',
@@ -1244,8 +1276,31 @@ if selected_file_name:
                         ),
                         row=2, col=1
                     )
+
+                    # Max drawdown annotation
+                    max_dd_value = df_equity['Drawdown_Equity'].min()  # Most negative
+                    max_dd_idx = df_equity['Drawdown_Equity'].idxmin()
+                    max_dd_date = df_equity.loc[max_dd_idx, date_col_pnl]
+
+                    fig_equity.add_annotation(
+                        x=max_dd_date, y=max_dd_value,
+                        text=f"<b>Max Drawdown</b><br>₹{abs(max_dd_value):,.2f}<br>{max_dd_date.strftime('%Y-%m-%d')}",
+                        showarrow=True,
+                        arrowhead=2,
+                        arrowsize=1,
+                        arrowwidth=2,
+                        arrowcolor=ANALYTICS_GRADIENT_ORANGE[6],
+                        ax=60, ay=-40,
+                        bgcolor=SURFACE_ALT,
+                        bordercolor=ANALYTICS_GRADIENT_ORANGE[5],
+                        borderwidth=2,
+                        borderpad=8,
+                        font=dict(size=12, color=TEXT_LIGHT, family="Arial Black"),
+                        row=2, col=1
+                    )
+
                     fig_equity.update_layout(
-                        title={'text': "🚀 P&L Equity Curve with Drawdown Analysis", 'x': 0.5, 'xanchor': 'center'},
+                        title={'text': "🚀 Equity Curve with Capital-Aware Drawdown", 'x': 0.5, 'xanchor': 'center'},
                         height=700, showlegend=True, hovermode='x unified'
                     )
                     fig_equity.update_xaxes(gridcolor='#374151', showgrid=True)
