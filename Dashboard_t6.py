@@ -319,17 +319,10 @@ def calculate_metrics_pnl(df: pd.DataFrame, col: str = PNL_COL) -> dict:
         if peak_margin > 0:
             metrics['roi'] = (metrics['total_pnl'] / peak_margin) * 100.0
 
-    # --- Capital-aware equity curve & max drawdown ---
+    # --- Max drawdown based on cumulative P&L ---
     cumulative_pnl = pnl_series.cumsum()
-    initial_capital = metrics.get('initial_capital', 0.0)
-
-    if initial_capital > 0:
-        equity_curve = initial_capital + cumulative_pnl
-    else:
-        equity_curve = cumulative_pnl  # fallback
-
-    running_max    = equity_curve.cummax()
-    drawdown       = equity_curve - running_max
+    running_max = cumulative_pnl.cummax()
+    drawdown = cumulative_pnl - running_max
     metrics['max_drawdown'] = float(abs(drawdown.min()))
 
     # --- Sharpe (still based on raw P&L series) ---
@@ -1179,19 +1172,16 @@ if selected_file_name:
                       delta=f"-₹{pnl_metrics['avg_loss']:,.0f}", delta_color="inverse")
         with pnl_col9:
             max_dd = pnl_metrics['max_drawdown']
-            initial_capital = pnl_metrics.get('initial_capital', 0.0)
-            if initial_capital > 0:
-                dd_pct = (max_dd / initial_capital) * 100.0
-            else:
-                peak_pnl = max(pnl_metrics['total_pnl'], 1)
-                dd_pct = (max_dd / peak_pnl * 100.0) if peak_pnl > 0 else 0.0
+            # Calculate as % of peak P&L reached
+            peak_pnl = max(abs(pnl_metrics['total_pnl']), max_dd, 1)  # Avoid division by zero
+            dd_pct = (max_dd / peak_pnl) * 100.0
 
             st.metric(
                 "Max Drawdown",
                 f"{dd_pct:.1f}%",
                 delta=f"₹{max_dd:,.0f}",
                 delta_color="inverse",
-                help="Maximum peak-to-trough fall of the equity curve, as a % of initial capital (Peak Margin)"
+                help="Maximum peak-to-trough fall in cumulative P&L"
             )
         with pnl_col10:
             st.metric("Sharpe Ratio", f"{pnl_metrics['sharpe_ratio']:.2f}")
@@ -1235,15 +1225,16 @@ if selected_file_name:
                     df_equity['PNL_num'] = pd.to_numeric(df_equity[PNL_COL], errors='coerce').fillna(0)
                     df_equity['Cumulative_PNL'] = df_equity['PNL_num'].cumsum()
 
-                    # 👇 Capital-aware equity
+                    # Drawdown based on cumulative P&L only
+                    df_equity['Running_Max_PNL'] = df_equity['Cumulative_PNL'].cummax()
+                    df_equity['Drawdown_PNL'] = df_equity['Cumulative_PNL'] - df_equity['Running_Max_PNL']
+
+                    # Keep equity curve for display (capital + PnL)
                     initial_capital = pnl_metrics.get('initial_capital', 0.0)
                     if initial_capital > 0:
                         df_equity['Equity'] = initial_capital + df_equity['Cumulative_PNL']
                     else:
                         df_equity['Equity'] = df_equity['Cumulative_PNL']
-
-                    df_equity['Running_Max_Equity'] = df_equity['Equity'].cummax()
-                    df_equity['Drawdown_Equity'] = df_equity['Equity'] - df_equity['Running_Max_Equity']
 
                     fig_equity = make_subplots(
                         rows=2, cols=1, row_heights=[0.7, 0.3],
@@ -1268,7 +1259,7 @@ if selected_file_name:
                     # Drawdown curve with Max Drawdown annotation
                     fig_equity.add_trace(
                         go.Scatter(
-                            x=df_equity[date_col_pnl], y=df_equity['Drawdown_Equity'],
+                            x=df_equity[date_col_pnl], y=df_equity['Drawdown_PNL'],
                             mode='lines', name='Drawdown',
                             line=dict(color=ANALYTICS_GRADIENT_ORANGE[5], width=2),
                             fill='tozeroy',
@@ -1278,8 +1269,8 @@ if selected_file_name:
                     )
 
                     # Max drawdown annotation
-                    max_dd_value = df_equity['Drawdown_Equity'].min()  # Most negative
-                    max_dd_idx = df_equity['Drawdown_Equity'].idxmin()
+                    max_dd_value = df_equity['Drawdown_PNL'].min()  # Changed from Drawdown_Equity
+                    max_dd_idx = df_equity['Drawdown_PNL'].idxmin()  # Changed from Drawdown_Equity
                     max_dd_date = df_equity.loc[max_dd_idx, date_col_pnl]
 
                     fig_equity.add_annotation(
