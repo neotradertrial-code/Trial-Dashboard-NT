@@ -270,7 +270,6 @@ def _load_service_account_info():
         st.stop()
 
 # --------------------------- Optimized Functions (PnL now uses capital-aware equity) ---------------------------
-@st.cache_data(show_spinner=False)
 def calculate_metrics_pnl(df: pd.DataFrame, col: str = PNL_COL) -> dict:
     metrics = {
         'total_trades': len(df),
@@ -309,10 +308,53 @@ def calculate_metrics_pnl(df: pd.DataFrame, col: str = PNL_COL) -> dict:
     if gross_loss != 0:
         metrics['profit_factor'] = gross_profit / gross_loss
 
-    # --- Peak Margin = Initial Capital for this slice ---
-    if 'MARGIN_REQ' in df.columns:
-        margin_series = pd.to_numeric(df['MARGIN_REQ'], errors='coerce').fillna(0.0)
-        peak_margin = float(margin_series.max())  # 👈 peak margin in the filtered period
+    # --- Peak Margin = max sum of margin across concurrently active trades ---
+    # Use MARGIN_REQ for options (SCAN_NAME == "OPT 1"), intra_margin for others
+    has_margin_req = 'MARGIN_REQ' in df.columns
+    has_intra = 'intra_margin' in df.columns or 'INTRA_MARGIN' in df.columns
+    intra_col = 'intra_margin' if 'intra_margin' in df.columns else ('INTRA_MARGIN' if 'INTRA_MARGIN' in df.columns else None)
+
+    if has_margin_req or has_intra:
+        if has_margin_req and has_intra and 'SCAN_NAME' in df.columns:
+            # Per-row: OPT 1 (ROS) uses MARGIN_REQ, others use intra_margin
+            is_opt = df['SCAN_NAME'].astype(str).str.strip().str.upper().isin(['OPT 1', 'ROS'])
+            margin_vals = pd.Series(0.0, index=df.index)
+            margin_vals[is_opt] = pd.to_numeric(df.loc[is_opt, 'MARGIN_REQ'], errors='coerce').fillna(0.0)
+            margin_vals[~is_opt] = pd.to_numeric(df.loc[~is_opt, intra_col], errors='coerce').fillna(0.0)
+        elif has_margin_req:
+            margin_vals = pd.to_numeric(df['MARGIN_REQ'], errors='coerce').fillna(0.0)
+        else:
+            margin_vals = pd.to_numeric(df[intra_col], errors='coerce').fillna(0.0)
+
+        # Determine signal/update date columns for overlap detection
+        sig_col = next((c for c in df.columns if c.upper() in ('SIGNAL_DT', 'SIGNAL_DATE')), None)
+        upd_col = next((c for c in df.columns if c.upper() in ('UPDATE_DT', 'UPDATE_DATE')), None)
+
+        if sig_col and upd_col:
+            sig_dt = pd.to_datetime(df[sig_col], errors='coerce')
+            upd_dt = pd.to_datetime(df[upd_col], errors='coerce')
+
+            # Build event list: +margin at signal, -margin at update
+            events = []
+            for margin, s, u in zip(margin_vals, sig_dt, upd_dt):
+                if pd.notna(s) and pd.notna(u) and margin > 0:
+                    events.append((s, margin))
+                    events.append((u, -margin))
+
+            if events:
+                events.sort(key=lambda x: x[0])
+                running_margin = 0.0
+                peak_margin = 0.0
+                for _, m in events:
+                    running_margin += m
+                    if running_margin > peak_margin:
+                        peak_margin = running_margin
+            else:
+                peak_margin = 0.0
+        else:
+            # Fallback: no date columns found, use simple max
+            peak_margin = float(margin_vals.max())
+
         metrics['total_margin'] = peak_margin
         metrics['initial_capital'] = peak_margin
 
@@ -451,7 +493,6 @@ def load_and_process_file(file_id: str, filename: str) -> Optional[pd.DataFrame]
     df = fix_datetime_columns(df)
     return df
 
-@st.cache_data(show_spinner=False)
 def precompute_filter_options_archive(df: pd.DataFrame) -> Dict:
     opts = {}
     opts['scan_names'] = ['All'] + (sorted(df['SCAN_NAME'].dropna().astype(str).unique()) if 'SCAN_NAME' in df.columns else [])
@@ -475,7 +516,6 @@ def precompute_filter_options_archive(df: pd.DataFrame) -> Dict:
             opts['max_date'] = vd.max().date()
     return opts
 
-@st.cache_data(show_spinner=False)
 def precompute_filter_options_pnl(df: pd.DataFrame) -> Dict:
     opts = {}
     symcol = 'TRADING_SYMBOL' if 'TRADING_SYMBOL' in df.columns else 'SYMBOL'
@@ -572,7 +612,6 @@ def apply_filters_pnl(df: pd.DataFrame, symbols, trades, statuses, scan_names, c
         mask &= (col_dt >= start_dt) & (col_dt <= end_dt)
     return df[mask]
 
-@st.cache_data(show_spinner=False)
 def calculate_metrics_archive(df: pd.DataFrame) -> dict:
     metrics = {'total_trades': len(df)}
     if df is None or df.empty or 'STATUS' not in df.columns:
