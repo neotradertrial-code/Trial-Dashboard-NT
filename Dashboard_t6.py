@@ -26,6 +26,11 @@ SURFACE_ALT  = "rgba(17, 24, 39, 0.65)"
 BORDER_RGBA  = "rgba(255, 255, 255, 0.08)"
 TEXT_LIGHT   = "#e5e7eb"                          # light gray text
 TEXT_MUTED   = "#9ca3af"                          # muted gray
+METRIC_VALUE = "#F4F6FA"                          # soft NeoTrader white for key numbers
+METRIC_LABEL = "#CBD5E1"
+METRIC_LABEL_HOVER = "#8FDCD3"
+METRIC_VALUE_HOVER = "#F2D66B"
+METRIC_VALUE_GLOW = "rgba(255, 217, 26, 0.24)"
 
 # Brand accents
 PRIMARY_A    = "#2457D6"  # deeper Neo blue
@@ -98,11 +103,43 @@ st.markdown(f"""
         box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
     }}
     .stMetric label {{
-        color: {TEXT_MUTED} !important;
+        color: {METRIC_LABEL} !important;
         font-size: 13px !important;
-        font-weight: 600 !important;
-        text-transform: uppercase;
-        letter-spacing: .6px;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: .45px !important;
+        line-height: 1.25 !important;
+        margin-bottom: 4px !important;
+    }}
+    .stMetric label p {{
+        color: {METRIC_LABEL} !important;
+        font-size: inherit !important;
+        font-weight: 700 !important;
+        line-height: 1.25 !important;
+    }}
+    .stMetric label svg {{
+        color: {TEXT_MUTED} !important;
+        opacity: 0.9;
+    }}
+    .stMetric label,
+    .stMetric label p,
+    .stMetric [data-testid="stMetricValue"],
+    .stMetric [data-testid="stMetricValue"] p {{
+        transition: color 0.18s ease, -webkit-text-fill-color 0.18s ease, text-shadow 0.18s ease;
+    }}
+    .stMetric:hover label,
+    .stMetric:hover label p {{
+        color: {METRIC_LABEL_HOVER} !important;
+    }}
+    .stMetric:hover label svg {{
+        color: {PRIMARY_B} !important;
+        opacity: 1;
+    }}
+    .stMetric:hover [data-testid="stMetricValue"],
+    .stMetric:hover [data-testid="stMetricValue"] p {{
+        color: {METRIC_VALUE_HOVER} !important;
+        -webkit-text-fill-color: {METRIC_VALUE_HOVER} !important;
+        text-shadow: 0 0 10px {METRIC_VALUE_GLOW} !important;
     }}
     .stMetric [data-testid="stMetricValue"] {{
         font-size: 26px !important;
@@ -113,9 +150,10 @@ st.markdown(f"""
         text-overflow: clip !important;
         white-space: normal !important;
         overflow-wrap: anywhere !important;
-        color: {TEXT_LIGHT} !important;
+        color: {METRIC_VALUE} !important;
         background: none !important;
-        -webkit-text-fill-color: {TEXT_LIGHT} !important;
+        -webkit-text-fill-color: {METRIC_VALUE} !important;
+        text-shadow: none !important;
     }}
     .stMetric [data-testid="stMetricValue"] > div,
     .stMetric [data-testid="stMetricValue"] p {{
@@ -254,19 +292,102 @@ st.markdown(f"""
         box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28) !important;
     }}
     .stMetric label {{
-        font-size: 12px !important;
-        letter-spacing: .4px !important;
+        color: {METRIC_LABEL} !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: .45px !important;
+        line-height: 1.25 !important;
+        margin-bottom: 4px !important;
+    }}
+    .stMetric label p {{
+        color: {METRIC_LABEL} !important;
+        font-size: inherit !important;
+        font-weight: 700 !important;
+        line-height: 1.25 !important;
+    }}
+    .stMetric label svg {{
+        color: {TEXT_MUTED} !important;
+        opacity: 0.9;
+    }}
+    .stMetric label,
+    .stMetric label p,
+    .stMetric [data-testid="stMetricValue"],
+    .stMetric [data-testid="stMetricValue"] p {{
+        transition: color 0.18s ease, -webkit-text-fill-color 0.18s ease, text-shadow 0.18s ease;
+    }}
+    .stMetric:hover label,
+    .stMetric:hover label p {{
+        color: {METRIC_LABEL_HOVER} !important;
+    }}
+    .stMetric:hover label svg {{
+        color: {PRIMARY_B} !important;
+        opacity: 1;
+    }}
+    .stMetric:hover [data-testid="stMetricValue"],
+    .stMetric:hover [data-testid="stMetricValue"] p {{
+        color: {METRIC_VALUE_HOVER} !important;
+        -webkit-text-fill-color: {METRIC_VALUE_HOVER} !important;
+        text-shadow: 0 0 10px {METRIC_VALUE_GLOW} !important;
     }}
     .stMetric [data-testid="stMetricValue"] {{
         font-size: 25px !important;
-        color: {TEXT_LIGHT} !important;
+        color: {METRIC_VALUE} !important;
         background: none !important;
-        -webkit-text-fill-color: {TEXT_LIGHT} !important;
+        -webkit-text-fill-color: {METRIC_VALUE} !important;
+        text-shadow: none !important;
     }}
     .stMetric [data-testid="stMetricDelta"] {{
         font-size: 13px !important;
         font-weight: 700 !important;
         margin-top: 8px !important;
+    }}
+    div[data-testid="stMetric"] {{
+        background: rgba(15, 23, 42, 0.72) !important;
+        border: 1px solid {BORDER_RGBA} !important;
+        border-radius: 8px !important;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22) !important;
+        padding: 16px 18px !important;
+        min-height: 124px !important;
+        transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease !important;
+    }}
+    div[data-testid="stMetric"]:hover {{
+        background: rgba(18, 28, 48, 0.88) !important;
+        border-color: rgba(31, 184, 166, 0.38) !important;
+        box-shadow: 0 16px 34px rgba(0, 0, 0, 0.30) !important;
+        transform: translateY(-1px);
+    }}
+    div[data-testid="stMetric"] label,
+    div[data-testid="stMetric"] label p,
+    div[data-testid="stMetric"] [data-testid="stMetricLabel"] p {{
+        color: {METRIC_LABEL} !important;
+        text-transform: uppercase !important;
+        letter-spacing: .45px !important;
+        font-weight: 700 !important;
+        transition: color 0.18s ease, -webkit-text-fill-color 0.18s ease !important;
+    }}
+    div[data-testid="stMetric"] [data-testid="stMetricValue"],
+    div[data-testid="stMetric"] [data-testid="stMetricValue"] * {{
+        color: {METRIC_VALUE} !important;
+        -webkit-text-fill-color: {METRIC_VALUE} !important;
+        text-shadow: none !important;
+        transition: color 0.18s ease, -webkit-text-fill-color 0.18s ease, text-shadow 0.18s ease !important;
+    }}
+    div[data-testid="stMetric"]:hover label,
+    div[data-testid="stMetric"]:hover label p,
+    div[data-testid="stMetric"]:hover [data-testid="stMetricLabel"] p {{
+        color: {METRIC_LABEL_HOVER} !important;
+        -webkit-text-fill-color: {METRIC_LABEL_HOVER} !important;
+    }}
+    div[data-testid="stMetric"]:hover label svg {{
+        color: {PRIMARY_B} !important;
+        opacity: 1 !important;
+    }}
+    div[data-testid="stMetric"]:hover [data-testid="stMetricValue"],
+    div[data-testid="stMetric"]:hover [data-testid="stMetricValue"] * {{
+        color: {METRIC_VALUE_HOVER} !important;
+        -webkit-text-fill-color: {METRIC_VALUE_HOVER} !important;
+        text-shadow: 0 0 10px {METRIC_VALUE_GLOW} !important;
     }}
     div[data-testid="stExpander"] {{
         background: rgba(15, 23, 42, 0.62) !important;
@@ -1057,20 +1178,41 @@ if selected_file_name:
 
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
-            st.metric("Total Trades", f"{metrics['total_trades']:,}")
+            st.metric(
+                "Total Trades",
+                f"{metrics['total_trades']:,}",
+                help="Number of trades visible after the selected filters."
+            )
         with col2:
-            st.metric("Winning Trades", f"{metrics.get('winning_trades', 0):,}",
-                      delta=f"{metrics.get('hit_rate', 0):.1f}%", help="Trades that hit any target (T1/T2/T3)")
+            st.metric(
+                "Winning Trades",
+                f"{metrics.get('winning_trades', 0):,}",
+                delta=f"{metrics.get('hit_rate', 0):.1f}%",
+                help="Trades that hit any target: T1, T2, or T3."
+            )
         with col3:
             losing = metrics.get('losing_trades', 0)
             total = max(metrics['total_trades'], 1)
-            st.metric("Losing Trades", f"{losing:,}",
-                      delta=f"-{(losing/total*100):.1f}%", delta_color="inverse")
+            st.metric(
+                "Losing Trades",
+                f"{losing:,}",
+                delta=f"-{(losing/total*100):.1f}%",
+                delta_color="inverse",
+                help="Trades where stop loss was hit."
+            )
         with col4:
-            st.metric("Breakeven", f"{metrics.get('breakeven_trades', 0):,}")
+            st.metric(
+                "Breakeven",
+                f"{metrics.get('breakeven_trades', 0):,}",
+                help="Trades closed without a target or stop-loss result."
+            )
         with col5:
             win_loss_ratio = metrics.get('winning_trades', 0) / max(metrics.get('losing_trades', 1), 1)
-            st.metric("Win/Loss Ratio", f"{win_loss_ratio:.2f}")
+            st.metric(
+                "Win/Loss Ratio",
+                f"{win_loss_ratio:.2f}",
+                help="Winning trades divided by losing trades."
+            )
 
         st.markdown(f"""
         <div style='text-align: center; margin: 24px 0 10px 0;'>
@@ -1089,7 +1231,8 @@ if selected_file_name:
                 st.metric(
                     f"Target {i} Hit Rate",
                     f"{metrics.get(f'target{i}_met', 0):,} trades",
-                    delta=f"{rate:.1f}%"
+                    delta=f"{rate:.1f}%",
+                    help=f"Number and percentage of filtered trades that reached Target {i}."
                 )
 
         st.markdown(f"""
@@ -1444,32 +1587,70 @@ if selected_file_name:
         # 1st row: Win Rate – Winning Trades – Losing Trades – Total Trades – Profit Factor
         pnl_col1, pnl_col2, pnl_col3, pnl_col4, pnl_col5 = st.columns(5)
         with pnl_col1:
-            st.metric("Win Rate", f"{pnl_metrics['win_rate']:.1f}%",
-                      delta=f"{pnl_metrics['winning_trades']:,} wins")
+            st.metric(
+                "Win Rate",
+                f"{pnl_metrics['win_rate']:.1f}%",
+                delta=f"{pnl_metrics['winning_trades']:,} wins",
+                help="Winning trades as a percentage of total trades."
+            )
         with pnl_col2:
-            st.metric("Winning Trades", f"{pnl_metrics['winning_trades']:,}")
+            st.metric(
+                "Winning Trades",
+                f"{pnl_metrics['winning_trades']:,}",
+                help="Count of filtered trades with positive P&L."
+            )
         with pnl_col3:
-            st.metric("Losing Trades", f"{pnl_metrics['losing_trades']:,}",
-                      delta=f"-{pnl_metrics['losing_trades']:,}", delta_color="inverse")
+            st.metric(
+                "Losing Trades",
+                f"{pnl_metrics['losing_trades']:,}",
+                delta=f"-{pnl_metrics['losing_trades']:,}",
+                delta_color="inverse",
+                help="Count of filtered trades with negative P&L."
+            )
         with pnl_col4:
-            st.metric("Total Trades", f"{pnl_metrics['total_trades']:,}")
+            st.metric(
+                "Total Trades",
+                f"{pnl_metrics['total_trades']:,}",
+                help="Number of P&L rows visible after the selected filters."
+            )
         with pnl_col5:
-            st.metric("Profit Factor", f"{pnl_metrics['profit_factor']:.2f}")
+            st.metric(
+                "Profit Factor",
+                f"{pnl_metrics['profit_factor']:.2f}",
+                help="Gross profit divided by gross loss. Above 1 means profits are larger than losses."
+            )
 
         # 2nd row: Total P&L, Avg Winner, Avg Loser, Sharpe Ratio
         pnl_col6, pnl_col7, pnl_col8, pnl_col9 = st.columns(4)
         with pnl_col6:
             pnl_val = pnl_metrics['total_pnl']
-            st.metric("Total P&L", f"₹{pnl_val:,.0f}",
-                      delta="Profit" if pnl_val > 0 else "Loss",
-                      delta_color="normal" if pnl_val > 0 else "inverse")
+            st.metric(
+                "Total P&L",
+                f"₹{pnl_val:,.0f}",
+                delta="Profit" if pnl_val > 0 else "Loss",
+                delta_color="normal" if pnl_val > 0 else "inverse",
+                help="Sum of TOTAL_PNL for the filtered period."
+            )
         with pnl_col7:
-            st.metric("Avg Winner", f"₹{pnl_metrics['avg_win']:,.0f}")
+            st.metric(
+                "Avg Winner",
+                f"₹{pnl_metrics['avg_win']:,.0f}",
+                help="Average profit across winning trades only."
+            )
         with pnl_col8:
-            st.metric("Avg Loser", f"₹{pnl_metrics['avg_loss']:,.0f}",
-                      delta=f"-₹{pnl_metrics['avg_loss']:,.0f}", delta_color="inverse")
+            st.metric(
+                "Avg Loser",
+                f"₹{pnl_metrics['avg_loss']:,.0f}",
+                delta=f"-₹{pnl_metrics['avg_loss']:,.0f}",
+                delta_color="inverse",
+                help="Average loss across losing trades only, shown as an absolute amount."
+            )
         with pnl_col9:
-            st.metric("Sharpe Ratio", f"{pnl_metrics['sharpe_ratio']:.2f}")
+            st.metric(
+                "Sharpe Ratio",
+                f"{pnl_metrics['sharpe_ratio']:.2f}",
+                help="Risk-adjusted return based on average trade P&L and P&L volatility."
+            )
 
         # NEW 3rd row: Margin & ROI (keeps all old metrics intact) 
         pnl_col11, pnl_col12 = st.columns(2)
@@ -1477,13 +1658,13 @@ if selected_file_name:
             st.metric(
                 "Peak Margin Required",
                 f"₹{pnl_metrics['total_margin']:,.0f}",
-                help="Maximum combined margin used at any point in the selected period (treated as Initial Capital)"
+                help="Maximum combined margin used at any point in the selected period."
             )
         with pnl_col12:
             st.metric(
                 "ROI on Margin",
                 f"{pnl_metrics['roi']:.1f}%",
-                help="Total P&L ÷ Peak Margin Required × 100 for the filtered period"
+                help="Total P&L divided by Peak Margin Required, multiplied by 100."
             )
 
         st.markdown(f"""
