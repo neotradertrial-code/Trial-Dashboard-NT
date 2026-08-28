@@ -26,10 +26,10 @@ SURFACE_ALT  = "rgba(17, 24, 39, 0.65)"
 BORDER_RGBA  = "rgba(255, 255, 255, 0.08)"
 TEXT_LIGHT   = "#e5e7eb"                          # light gray text
 TEXT_MUTED   = "#9ca3af"                          # muted gray
-METRIC_VALUE = "#F4F6FA"                          # soft NeoTrader white for key numbers
-METRIC_LABEL = "#CBD5E1"
-METRIC_LABEL_HOVER = "#8FDCD3"
-METRIC_VALUE_HOVER = "#F2D66B"
+METRIC_VALUE = "#F2D66B"                          # muted NeoTrader gold for key numbers
+METRIC_LABEL = "#8FDCD3"
+METRIC_LABEL_HOVER = "#B8F1EB"
+METRIC_VALUE_HOVER = "#F7E59B"
 METRIC_VALUE_GLOW = "rgba(255, 217, 26, 0.24)"
 
 # Brand accents
@@ -95,7 +95,7 @@ st.markdown(f"""
         padding: 20px;
         border-radius: 14px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-        border: 1px solid {BORDER_RGBA};
+        border: 1px solid rgba(31, 184, 166, 0.32);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }}
     .stMetric:hover {{
@@ -153,7 +153,7 @@ st.markdown(f"""
         color: {METRIC_VALUE} !important;
         background: none !important;
         -webkit-text-fill-color: {METRIC_VALUE} !important;
-        text-shadow: none !important;
+        text-shadow: 0 0 10px {METRIC_VALUE_GLOW} !important;
     }}
     .stMetric [data-testid="stMetricValue"] > div,
     .stMetric [data-testid="stMetricValue"] p {{
@@ -281,7 +281,7 @@ st.markdown(f"""
         background: rgba(15, 23, 42, 0.72) !important;
         padding: 16px 18px !important;
         border-radius: 8px !important;
-        border: 1px solid {BORDER_RGBA} !important;
+        border: 1px solid rgba(31, 184, 166, 0.32) !important;
         box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22) !important;
         min-height: 124px;
         transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
@@ -335,16 +335,32 @@ st.markdown(f"""
         color: {METRIC_VALUE} !important;
         background: none !important;
         -webkit-text-fill-color: {METRIC_VALUE} !important;
-        text-shadow: none !important;
+        text-shadow: 0 0 10px {METRIC_VALUE_GLOW} !important;
     }}
     .stMetric [data-testid="stMetricDelta"] {{
+        display: inline-flex !important;
+        align-items: center !important;
+        width: fit-content !important;
         font-size: 13px !important;
         font-weight: 700 !important;
         margin-top: 8px !important;
+        padding: 3px 8px !important;
+        border-radius: 999px !important;
+        background: color-mix(in srgb, currentColor 16%, transparent) !important;
+        line-height: 1.1 !important;
+    }}
+    div[data-testid="stMetric"] [data-testid="stMetricDelta"] {{
+        display: inline-flex !important;
+        align-items: center !important;
+        width: fit-content !important;
+        padding: 3px 8px !important;
+        border-radius: 999px !important;
+        background: color-mix(in srgb, currentColor 16%, transparent) !important;
+        line-height: 1.1 !important;
     }}
     div[data-testid="stMetric"] {{
         background: rgba(15, 23, 42, 0.72) !important;
-        border: 1px solid {BORDER_RGBA} !important;
+        border: 1px solid rgba(31, 184, 166, 0.32) !important;
         border-radius: 8px !important;
         box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22) !important;
         padding: 16px 18px !important;
@@ -370,7 +386,7 @@ st.markdown(f"""
     div[data-testid="stMetric"] [data-testid="stMetricValue"] * {{
         color: {METRIC_VALUE} !important;
         -webkit-text-fill-color: {METRIC_VALUE} !important;
-        text-shadow: none !important;
+        text-shadow: 0 0 10px {METRIC_VALUE_GLOW} !important;
         transition: color 0.18s ease, -webkit-text-fill-color 0.18s ease, text-shadow 0.18s ease !important;
     }}
     div[data-testid="stMetric"]:hover label,
