@@ -3,7 +3,6 @@
 import io
 import json
 
-import os
 from pathlib import Path
 from typing import Optional, List, Tuple, Dict
 
@@ -16,13 +15,10 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 
-# === NEW: Local logo path (your absolute Windows path) ===
-LOGO_PATH = r"C:\Users\ulters pc\Desktop\Om Deshmukh Work\IMP Strategies\Old data Neo Trader\Aditya Sir Dashboard\assets\2 (2).png"
-
 # ===================== THEME (NeoTrader palette) =====================
 # Backgrounds
-BG_START = "#0b1220"  # deep navy (page top)
-BG_END   = "#0f172a"  # dark slate (page bottom)
+BG_START = "#121522"  # NeoTrader deep navy
+BG_END   = "#071a4a"  # subtle blue base
 
 # Surfaces / borders / text
 SURFACE_RGBA = "rgba(13, 18, 28, 0.78)"          # glassy card
@@ -32,26 +28,27 @@ TEXT_LIGHT   = "#e5e7eb"                          # light gray text
 TEXT_MUTED   = "#9ca3af"                          # muted gray
 
 # Brand accents
-PRIMARY_A    = "#4FACFE"  # blue
-PRIMARY_B    = "#00F2FE"  # cyan
-ACCENT_Y     = "#FACC15"  # Neo yellow
+PRIMARY_A    = "#2457D6"  # deeper Neo blue
+PRIMARY_B    = "#1FB8A6"  # quieter Neo teal
+ACCENT_Y     = "#FFD91A"  # Neo yellow
+ACCENT_M     = "#C026D3"  # Neo logo magenta
 
 # Chart colorway (kept for defaults where no explicit colors are set)
-COLORWAY = [PRIMARY_A, PRIMARY_B, ACCENT_Y, "#22d3ee", "#0ea5e9", "#38bdf8", "#60a5fa", "#34d399", "#f59e0b", "#ef4444"]
+COLORWAY = [ACCENT_Y, PRIMARY_B, PRIMARY_A, ACCENT_M, "#22c55e", "#f59e0b", "#ef4444", "#14b8a6"]
 
 # Natural colors for "Advanced Analytics"
 WIN_GREEN      = "#22c55e"
 WIN_DARK_GREEN = "#166534"
 LOSS_RED       = "#ef4444"
 NEUTRAL_GRAY   = "#9ca3af"
-POSITIVE_BLUE  = "#3b82f6"
+POSITIVE_BLUE  = PRIMARY_A
 
 # NEW: Enhanced color palettes for Advanced Analytics
 ANALYTICS_GRADIENT_GREEN = ["#064e3b", "#065f46", "#047857", "#059669", "#10b981", "#34d399", "#6ee7b7"]
-ANALYTICS_GRADIENT_BLUE = ["#1e3a8a", "#1e40af", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd"]
-ANALYTICS_GRADIENT_PURPLE = ["#581c87", "#6b21a8", "#7c3aed", "#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe"]
-ANALYTICS_GRADIENT_ORANGE = ["#7c2d12", "#993311", "#c2410c", "#ea580c", "#f97316", "#fb923c", "#fdba74"]
-ANALYTICS_PIE_COLORS = ["#4FACFE", "#00F2FE", "#22c55e", "#FACC15", "#a78bfa", "#fb923c", "#ef4444", "#06b6d4"]
+ANALYTICS_GRADIENT_BLUE = ["#071a4a", "#0b2a74", "#15358f", "#1d4ed8", "#2457D6", "#1f6fbc", "#188f9e"]
+ANALYTICS_GRADIENT_PURPLE = ["#4a164f", "#6d1b76", "#92278f", "#C026D3", "#d946ef", "#e879f9", "#f0abfc"]
+ANALYTICS_GRADIENT_ORANGE = ["#713f12", "#854d0e", "#a16207", "#ca8a04", "#eab308", "#FFD91A", "#fde047"]
+ANALYTICS_PIE_COLORS = [ACCENT_Y, PRIMARY_B, PRIMARY_A, ACCENT_M, "#22c55e", "#f59e0b", "#ef4444", "#14b8a6"]
 
 PNL_COL = "TOTAL_PNL"
 
@@ -87,13 +84,6 @@ st.markdown(f"""
         margin-right: auto !important;
     }}
 
-    /* CENTER ANY st.image() (e.g., the logo) */
-    .stImage img {{
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-    }}
-
     .stMetric {{
         background: {SURFACE_RGBA};
         backdrop-filter: blur(10px);
@@ -115,11 +105,25 @@ st.markdown(f"""
         letter-spacing: .6px;
     }}
     .stMetric [data-testid="stMetricValue"] {{
-        font-size: 32px !important;
+        font-size: 26px !important;
         font-weight: 800 !important;
-        background: linear-gradient(135deg, {PRIMARY_A} 0%, {PRIMARY_B} 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        line-height: 1.15 !important;
+        max-width: none !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere !important;
+        color: {TEXT_LIGHT} !important;
+        background: none !important;
+        -webkit-text-fill-color: {TEXT_LIGHT} !important;
+    }}
+    .stMetric [data-testid="stMetricValue"] > div,
+    .stMetric [data-testid="stMetricValue"] p {{
+        max-width: none !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere !important;
     }}
 
     /* Expanders / cards */
@@ -137,7 +141,7 @@ st.markdown(f"""
         border-right: 1px solid {BORDER_RGBA};
     }}
 
-    /* Primary button = blue→cyan */
+    /* Primary button = NeoTrader brand gradient */
     .stButton>button {{
         background: linear-gradient(135deg, {PRIMARY_A} 0%, {PRIMARY_B} 100%);
         color: #001018;
@@ -146,15 +150,15 @@ st.markdown(f"""
         padding: 10px 20px;
         font-weight: 700;
         transition: all .25s ease;
-        box-shadow: 0 6px 18px rgba(79, 172, 254, 0.35);
+        box-shadow: 0 6px 18px rgba(36, 87, 214, 0.30);
     }}
     .stButton>button:hover {{
         transform: translateY(-2px);
-        box-shadow: 0 10px 26px rgba(0, 242, 254, 0.45);
+        box-shadow: 0 10px 26px rgba(45, 212, 191, 0.30);
         filter: brightness(1.02);
     }}
 
-    /* Download button = cyan ring */
+    /* Download button = teal ring */
     .stDownloadButton>button {{
         background: transparent;
         color: {TEXT_LIGHT};
@@ -163,15 +167,15 @@ st.markdown(f"""
         font-weight: 700;
     }}
     .stDownloadButton>button:hover {{
-        background: rgba(0, 242, 254, 0.08);
+        background: rgba(45, 212, 191, 0.08);
         transform: translateY(-2px);
     }}
 
     /* Radios / labels */
     .stRadio > label {{
-        background: linear-gradient(135deg, {PRIMARY_A} 0%, {PRIMARY_B} 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: {ACCENT_Y};
+        background: none;
+        -webkit-text-fill-color: {ACCENT_Y};
         font-weight: 800;
         font-size: 15px;
     }}
@@ -206,11 +210,141 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# ---- Header with centered logo + text (simplified) ----
-with st.container():
-    if os.path.exists(LOGO_PATH):
-        st.image(LOGO_PATH, width=220)  # centered via CSS
+st.markdown(f"""
+<style>
+    html, body, [data-testid="stAppViewContainer"] {{
+        background: linear-gradient(180deg, {BG_START} 0%, {BG_END} 100%) !important;
+        color: {TEXT_LIGHT};
+    }}
+    .main .block-container {{
+        max-width: 1320px;
+        padding-top: 24px;
+        padding-bottom: 28px;
+    }}
+    h1, h2, h3, h4, h5, h6, p, label {{
+        letter-spacing: 0 !important;
+    }}
+    .main h2 {{
+        font-size: 24px !important;
+        line-height: 1.2 !important;
+        margin-bottom: 0 !important;
+    }}
+    .main h3 {{
+        font-size: 18px !important;
+        line-height: 1.25 !important;
+    }}
+    hr {{
+        margin: 24px 0 !important;
+        border: 0 !important;
+        height: 1px !important;
+        background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.18), transparent) !important;
+    }}
+    .stMetric {{
+        background: rgba(15, 23, 42, 0.72) !important;
+        padding: 16px 18px !important;
+        border-radius: 8px !important;
+        border: 1px solid {BORDER_RGBA} !important;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22) !important;
+        min-height: 124px;
+        transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    }}
+    .stMetric:hover {{
+        transform: translateY(-2px);
+        border-color: rgba(45, 212, 191, 0.28) !important;
+        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28) !important;
+    }}
+    .stMetric label {{
+        font-size: 12px !important;
+        letter-spacing: .4px !important;
+    }}
+    .stMetric [data-testid="stMetricValue"] {{
+        font-size: 25px !important;
+        color: {TEXT_LIGHT} !important;
+        background: none !important;
+        -webkit-text-fill-color: {TEXT_LIGHT} !important;
+    }}
+    .stMetric [data-testid="stMetricDelta"] {{
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        margin-top: 8px !important;
+    }}
+    div[data-testid="stExpander"] {{
+        background: rgba(15, 23, 42, 0.62) !important;
+        border-radius: 8px !important;
+        border: 1px solid {BORDER_RGBA} !important;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.20) !important;
+    }}
+    div[data-testid="stExpander"] details summary {{
+        color: {TEXT_LIGHT} !important;
+        font-weight: 750 !important;
+    }}
+    [data-testid="stSidebar"] {{
+        background: linear-gradient(180deg, {BG_END} 0%, {BG_START} 100%) !important;
+        border-right: 1px solid {BORDER_RGBA};
+    }}
+    [data-testid="stSidebar"] * {{
+        color: {TEXT_LIGHT};
+    }}
+    .stButton>button,
+    .stDownloadButton>button {{
+        border-radius: 8px !important;
+        transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+    }}
+    .stButton>button {{
+        box-shadow: 0 8px 18px rgba(36, 87, 214, 0.25) !important;
+    }}
+    .stButton>button:hover,
+    .stDownloadButton>button:hover {{
+        transform: translateY(-2px);
+    }}
+    .stRadio > label {{
+        color: {ACCENT_Y} !important;
+        -webkit-text-fill-color: {ACCENT_Y} !important;
+        background: none !important;
+        font-weight: 800;
+    }}
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="input"] > div {{
+        background: rgba(15, 23, 42, 0.82) !important;
+        border-color: rgba(148, 163, 184, 0.16) !important;
+        border-radius: 8px !important;
+        min-height: 42px;
+    }}
+    div[data-baseweb="select"] span,
+    div[data-baseweb="input"] input {{
+        color: {TEXT_LIGHT} !important;
+    }}
+    .stTabs [data-baseweb="tab-list"] {{
+        background: rgba(15, 23, 42, 0.55) !important;
+        border-radius: 8px !important;
+        padding: 6px !important;
+        border: 1px solid {BORDER_RGBA};
+    }}
+    .stTabs [data-baseweb="tab"] {{
+        border-radius: 8px !important;
+        padding: 10px 16px !important;
+    }}
+    .stDataFrame {{
+        border-radius: 8px !important;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.20) !important;
+    }}
+    div[data-testid="stPlotlyChart"] {{
+        background: rgba(15, 23, 42, 0.42);
+        border: 1px solid {BORDER_RGBA};
+        border-radius: 8px;
+        padding: 10px 12px 4px 12px;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+        margin-bottom: 18px;
+    }}
+    div[data-testid="stAlert"] {{
+        border-radius: 8px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+    }}
+</style>
+""", unsafe_allow_html=True)
 
+# ---- Header with centered text (simplified) ----
+with st.container():
     st.markdown(f"""
     <div style='
         width:100%;
@@ -219,19 +353,17 @@ with st.container():
         align-items:center;
         justify-content:center;
         text-align:center;
-        padding: 6px 0 20px 0;
+        padding: 4px 0 18px 0;
     '>
         <h1 style='
-            font-size: 48px;
+            font-size: 40px;
             font-weight: 900;
             color:{TEXT_LIGHT};
-            margin: 10px 0 8px 0;
+            margin: 8px 0 6px 0;
         '>
             Ab Smart Trading <span style="color:{ACCENT_Y};">Hoga Easy</span>
         </h1>
-        <p style='color: {TEXT_MUTED}; font-size: 16px; font-weight: 500; margin:0;'>
-            🚀 Supercharged analytics with real-time insights and Neo-style visuals
-        </p>
+        <div style='width: 118px; height: 2px; border-radius: 999px; background: linear-gradient(90deg, {ACCENT_Y}, {PRIMARY_B}, {PRIMARY_A}, {ACCENT_M});'></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -270,7 +402,54 @@ def _load_service_account_info():
         st.stop()
 
 # --------------------------- Optimized Functions (PnL now uses capital-aware equity) ---------------------------
-def calculate_metrics_pnl(df: pd.DataFrame, col: str = PNL_COL) -> dict:
+def build_pnl_equity_drawdown_df(
+    df: pd.DataFrame,
+    date_col: Optional[str],
+    col: str = PNL_COL,
+    initial_capital: float = 0.0
+) -> pd.DataFrame:
+    if df is None or df.empty or col not in df.columns:
+        return pd.DataFrame()
+
+    required_cols = [col]
+    if date_col and date_col in df.columns:
+        required_cols.append(date_col)
+
+    df_equity = df.dropna(subset=required_cols).copy()
+    if df_equity.empty:
+        return df_equity
+
+    if date_col and date_col in df_equity.columns:
+        df_equity[date_col] = pd.to_datetime(df_equity[date_col], errors='coerce')
+        df_equity = df_equity.dropna(subset=[date_col]).sort_values(date_col, kind='mergesort')
+
+    df_equity = df_equity.reset_index(drop=True)
+
+    df_equity['PNL_num'] = pd.to_numeric(df_equity[col], errors='coerce').fillna(0.0)
+    df_equity['Cumulative_PNL'] = df_equity['PNL_num'].cumsum()
+
+    initial_capital = float(initial_capital or 0.0)
+    if initial_capital > 0:
+        df_equity['Equity'] = initial_capital + df_equity['Cumulative_PNL']
+    else:
+        df_equity['Equity'] = df_equity['Cumulative_PNL']
+
+    df_equity['Running_Max_PNL'] = df_equity['Cumulative_PNL'].cummax()
+    df_equity['Drawdown_PNL'] = df_equity['Cumulative_PNL'] - df_equity['Running_Max_PNL']
+    df_equity['Running_Max_Equity'] = df_equity['Equity'].cummax()
+    df_equity['Drawdown_Pct'] = 0.0
+
+    positive_peak = df_equity['Running_Max_Equity'] > 0
+    df_equity.loc[positive_peak, 'Drawdown_Pct'] = (
+        df_equity.loc[positive_peak, 'Drawdown_PNL']
+        / df_equity.loc[positive_peak, 'Running_Max_Equity']
+        * 100.0
+    )
+
+    return df_equity
+
+
+def calculate_metrics_pnl(df: pd.DataFrame, col: str = PNL_COL, date_col: Optional[str] = None) -> dict:
     metrics = {
         'total_trades': len(df),
         'total_pnl': 0.0,
@@ -281,6 +460,7 @@ def calculate_metrics_pnl(df: pd.DataFrame, col: str = PNL_COL) -> dict:
         'win_rate': 0.0,
         'profit_factor': 0.0,
         'max_drawdown': 0.0,
+        'max_drawdown_pct': 0.0,
         'sharpe_ratio': 0.0,
         # Margin & capital metrics
         'total_margin': 0.0,
@@ -361,17 +541,88 @@ def calculate_metrics_pnl(df: pd.DataFrame, col: str = PNL_COL) -> dict:
         if peak_margin > 0:
             metrics['roi'] = (metrics['total_pnl'] / peak_margin) * 100.0
 
-    # --- Max drawdown based on cumulative P&L ---
-    cumulative_pnl = pnl_series.cumsum()
-    running_max = cumulative_pnl.cummax()
-    drawdown = cumulative_pnl - running_max
-    metrics['max_drawdown'] = float(abs(drawdown.min()))
+    # --- Max drawdown based on the same date-sorted curve used in the chart ---
+    equity_df = build_pnl_equity_drawdown_df(
+        df,
+        date_col=date_col,
+        col=col,
+        initial_capital=metrics.get('initial_capital', 0.0)
+    )
+    if not equity_df.empty and 'Drawdown_PNL' in equity_df.columns:
+        max_dd_idx = equity_df['Drawdown_PNL'].idxmin()
+        max_dd_value = float(equity_df.loc[max_dd_idx, 'Drawdown_PNL'])
+        metrics['max_drawdown'] = abs(max_dd_value)
+
+        peak_equity_at_dd = float(equity_df.loc[max_dd_idx, 'Running_Max_Equity'])
+        if peak_equity_at_dd > 0:
+            metrics['max_drawdown_pct'] = abs(max_dd_value) / peak_equity_at_dd * 100.0
 
     # --- Sharpe (still based on raw P&L series) ---
     if len(pnl_series) > 1 and float(pnl_series.std()) != 0:
         metrics['sharpe_ratio'] = float((pnl_series.mean() / pnl_series.std()) * np.sqrt(252))
 
     return metrics
+
+
+def style_chart(fig, title: Optional[str] = None, height: Optional[int] = None, showlegend: Optional[bool] = None):
+    title_text = title
+    if title_text is None and getattr(fig.layout, "title", None) and fig.layout.title.text:
+        title_text = fig.layout.title.text
+
+    layout_updates = {
+        "paper_bgcolor": "rgba(0,0,0,0)",
+        "plot_bgcolor": "rgba(0,0,0,0)",
+        "font": dict(color=TEXT_LIGHT, size=12, family="Segoe UI, Arial, sans-serif"),
+        "margin": dict(l=58, r=34, t=66, b=42),
+        "hoverlabel": dict(
+            bgcolor="rgba(15, 23, 42, 0.96)",
+            bordercolor="rgba(148, 163, 184, 0.20)",
+            font=dict(color=TEXT_LIGHT, size=12)
+        ),
+        "legend": dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            bgcolor="rgba(0,0,0,0)",
+            font=dict(size=11, color=TEXT_MUTED)
+        )
+    }
+    if height is not None:
+        layout_updates["height"] = height
+    if showlegend is not None:
+        layout_updates["showlegend"] = showlegend
+    if title_text:
+        layout_updates["title"] = {
+            "text": title_text,
+            "x": 0.01,
+            "xanchor": "left",
+            "font": {"size": 17, "color": TEXT_LIGHT}
+        }
+
+    fig.update_layout(**layout_updates)
+    fig.update_xaxes(
+        gridcolor="rgba(55, 65, 81, 0.35)",
+        zeroline=False,
+        linecolor="rgba(148, 163, 184, 0.16)",
+        tickfont=dict(color=TEXT_MUTED, size=11),
+        title_font=dict(color=TEXT_MUTED, size=12)
+    )
+    fig.update_yaxes(
+        gridcolor="rgba(55, 65, 81, 0.40)",
+        zeroline=False,
+        linecolor="rgba(148, 163, 184, 0.16)",
+        tickfont=dict(color=TEXT_MUTED, size=11),
+        title_font=dict(color=TEXT_MUTED, size=12)
+    )
+    fig.update_traces(
+        textfont=dict(color=TEXT_LIGHT, size=11),
+        cliponaxis=False,
+        selector=dict(type="bar")
+    )
+    fig.update_annotations(font=dict(color=TEXT_MUTED, size=12))
+    return fig
 
 @st.cache_resource
 def get_drive_service():
@@ -641,7 +892,7 @@ with st.sidebar:
     st.markdown(f"""
     <div style='text-align: center; padding: 10px;
         background: linear-gradient(135deg, {PRIMARY_A} 0%, {PRIMARY_B} 100%);
-        border-radius: 10px; margin-bottom: 16px;'>
+        border-radius: 8px; margin-bottom: 16px;'>
         <h3 style='color: #031015; margin: 0;'>📁 Data Source</h3>
     </div>
     """, unsafe_allow_html=True)
@@ -684,11 +935,10 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown(f"""
-    <div style='padding: 14px; background: rgba(0, 242, 254, 0.08); border-radius: 10px; border-left: 4px solid {PRIMARY_B};'>
-        <h4 style='color: {PRIMARY_A}; margin: 0 0 6px 0;'>ℹ️ Current Mode</h4>
+    <div style='padding: 14px; background: rgba(255, 217, 26, 0.08); border-radius: 8px; border-left: 3px solid {ACCENT_Y};'>
+        <h4 style='color: {ACCENT_Y}; margin: 0 0 6px 0;'>ℹ️ Current Mode</h4>
         <p style='color: {TEXT_MUTED}; font-size: 13px; margin: 0;'>
-            📂 <strong style="color:{TEXT_LIGHT}">{data_mode}</strong><br>
-            ⚡ Lightning-fast analytics • 🔄 Real-time sync • 📊 Neo-style visuals • 💾 Smart caching
+            <strong style="color:{TEXT_LIGHT}">{data_mode}</strong>
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -825,7 +1075,7 @@ if selected_file_name:
         st.markdown(f"""
         <div style='text-align: center; margin: 24px 0 10px 0;'>
             <h3 style='
-                color:{PRIMARY_A};
+                color:{TEXT_LIGHT};
                 font-size: 22px;
                 font-weight: 800;
             '>🎯 Target Achievement Rates</h3>
@@ -845,9 +1095,8 @@ if selected_file_name:
         st.markdown(f"""
         <div style='text-align: center; margin: 32px 0 16px 0;'>
             <h2 style='
-                background: linear-gradient(135deg, {PRIMARY_A} 0%, {PRIMARY_B} 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
+                color:{ACCENT_Y};
+                background:none;
                 font-size: 30px;
                 font-weight: 900;
             '>📈 Advanced Analytics</h2>
@@ -897,6 +1146,7 @@ if selected_file_name:
                         legend=dict(orientation="v", yanchor="middle", y=0.5, xanchor="left", x=1.02,
                                     bgcolor=SURFACE_ALT, bordercolor=BORDER_RGBA, borderwidth=1, font=dict(size=11))
                     )
+                    style_chart(fig_pie)
                     st.plotly_chart(fig_pie, use_container_width=True)
 
             with viz_col2:
@@ -938,6 +1188,7 @@ if selected_file_name:
                                 xaxis_title="Win Rate (%)", yaxis_title="", height=450,
                                 xaxis=dict(gridcolor='#374151', showgrid=True), yaxis=dict(gridcolor='#374151')
                             )
+                            style_chart(fig_winrate)
                             st.plotly_chart(fig_winrate, use_container_width=True)
                     except Exception as e:
                         st.warning(f"Could not create win rate chart: {e}")
@@ -964,6 +1215,7 @@ if selected_file_name:
                         xaxis_title="Number of Trades", yaxis_title="", height=450,
                         xaxis=dict(gridcolor='#374151', showgrid=True), yaxis=dict(gridcolor='#374151')
                     )
+                    style_chart(fig_tf)
                     st.plotly_chart(fig_tf, use_container_width=True)
 
             with viz_col4:
@@ -984,6 +1236,7 @@ if selected_file_name:
                         showlegend=True, height=450,
                         legend=dict(bgcolor=SURFACE_ALT, bordercolor=BORDER_RGBA, borderwidth=1, font=dict(size=11))
                     )
+                    style_chart(fig_alert)
                     st.plotly_chart(fig_alert, use_container_width=True)
 
         # ----- Performance Tab (Enhanced Colors)
@@ -1012,6 +1265,7 @@ if selected_file_name:
                         xaxis_title="", yaxis_title="Number of Trades", height=450,
                         xaxis=dict(gridcolor='#374151'), yaxis=dict(gridcolor='#374151', showgrid=True)
                     )
+                    style_chart(fig_breakdown)
                     st.plotly_chart(fig_breakdown, use_container_width=True)
 
             with viz_col6:
@@ -1036,6 +1290,7 @@ if selected_file_name:
                             xaxis_title="Trades", yaxis_title="", height=450,
                             xaxis=dict(gridcolor='#374151', showgrid=True), yaxis=dict(gridcolor='#374151')
                         )
+                        style_chart(fig_scan)
                         st.plotly_chart(fig_scan, use_container_width=True)
                     except Exception:
                         pass
@@ -1052,7 +1307,7 @@ if selected_file_name:
                         x=df_time[date_col], y=df_time['cumulative_trades'], mode='lines',
                         name='Cumulative Trades', 
                         line=dict(width=4, color=ANALYTICS_GRADIENT_BLUE[4], shape='spline'),
-                        fill='tozeroy', fillcolor='rgba(59,130,246,0.25)',
+                        fill='tozeroy', fillcolor='rgba(36, 87, 214, 0.18)',
                         hovertemplate='<b>Date</b>: %{x}<br><b>Total Trades</b>: %{y}<extra></extra>'
                     ))
                     fig_timeline.update_layout(
@@ -1061,6 +1316,7 @@ if selected_file_name:
                         xaxis=dict(gridcolor='#374151', showgrid=True), yaxis=dict(gridcolor='#374151', showgrid=True),
                         hovermode='x unified'
                     )
+                    style_chart(fig_timeline)
                     st.plotly_chart(fig_timeline, use_container_width=True)
 
                     if 'STATUS' in df_time.columns:
@@ -1084,6 +1340,7 @@ if selected_file_name:
                             xaxis=dict(gridcolor='#374151', showgrid=True), yaxis=dict(gridcolor='#374151', showgrid=True),
                             hovermode='x unified'
                         )
+                        style_chart(fig_winrate_time)
                         st.plotly_chart(fig_winrate_time, use_container_width=True)
 
         # ----- Heatmaps Tab (Enhanced Colors)
@@ -1113,6 +1370,7 @@ if selected_file_name:
                         xaxis_title="Timeframe", yaxis_title="Strategy", height=600,
                         xaxis=dict(side='bottom'), yaxis=dict(side='left')
                     )
+                    style_chart(fig_heatmap)
                     st.plotly_chart(fig_heatmap, use_container_width=True)
                 except Exception as e:
                     st.warning(f"Could not create heatmap: {e}")
@@ -1170,7 +1428,8 @@ if selected_file_name:
         filter_pct = (len(filtered_df) / len(df) * 100) if len(df) > 0 else 0
         st.info(f"📌 Showing {len(filtered_df):,} / {len(df):,} trades ({filter_pct:.1f}%)", icon="📌")
 
-        pnl_metrics = calculate_metrics_pnl(filtered_df)
+        date_col_for_pnl = filter_options.get('date_col')
+        pnl_metrics = calculate_metrics_pnl(filtered_df, date_col=date_col_for_pnl)
 
         st.markdown(f"""
         <div style='text-align: center; margin: 16px 0;'>
@@ -1197,8 +1456,8 @@ if selected_file_name:
         with pnl_col5:
             st.metric("Profit Factor", f"{pnl_metrics['profit_factor']:.2f}")
 
-        # 2nd row: Total P&L – Avg Winner – Avg Loser – Max Drawdown % – Sharpe Ratio
-        pnl_col6, pnl_col7, pnl_col8, pnl_col9, pnl_col10 = st.columns(5)
+        # 2nd row: Total P&L, Avg Winner, Avg Loser, Sharpe Ratio
+        pnl_col6, pnl_col7, pnl_col8, pnl_col9 = st.columns(4)
         with pnl_col6:
             pnl_val = pnl_metrics['total_pnl']
             st.metric("Total P&L", f"₹{pnl_val:,.0f}",
@@ -1210,19 +1469,6 @@ if selected_file_name:
             st.metric("Avg Loser", f"₹{pnl_metrics['avg_loss']:,.0f}",
                       delta=f"-₹{pnl_metrics['avg_loss']:,.0f}", delta_color="inverse")
         with pnl_col9:
-            max_dd = pnl_metrics['max_drawdown']
-            # Calculate as % of peak P&L reached
-            peak_pnl = max(abs(pnl_metrics['total_pnl']), max_dd, 1)  # Avoid division by zero
-            dd_pct = (max_dd / peak_pnl) * 100.0
-
-            st.metric(
-                "Max Drawdown",
-                f"{dd_pct:.1f}%",
-                delta=f"₹{max_dd:,.0f}",
-                delta_color="inverse",
-                help="Maximum peak-to-trough fall in cumulative P&L"
-            )
-        with pnl_col10:
             st.metric("Sharpe Ratio", f"{pnl_metrics['sharpe_ratio']:.2f}")
 
         # NEW 3rd row: Margin & ROI (keeps all old metrics intact) 
@@ -1243,9 +1489,8 @@ if selected_file_name:
         st.markdown(f"""
         <div style='text-align: center; margin: 28px 0 12px 0;'>
             <h2 style='
-                background: linear-gradient(135deg, {PRIMARY_A} 0%, {PRIMARY_B} 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
+                color:{ACCENT_Y};
+                background:none;
                 font-size: 30px;
                 font-weight: 900;
             '>📊 P&L Analytics Dashboard</h2>
@@ -1257,84 +1502,223 @@ if selected_file_name:
         # TAB 1: Equity Curve (capital-aware)
         with pnl_tabs[0]:
             if PNL_COL in filtered_df.columns:
-                df_equity = filtered_df.copy()
                 date_col_pnl = filter_options.get('date_col')
                 if date_col_pnl:
-                    df_equity = df_equity.dropna(subset=[date_col_pnl, PNL_COL]).sort_values(date_col_pnl)
-                    df_equity['PNL_num'] = pd.to_numeric(df_equity[PNL_COL], errors='coerce').fillna(0)
-                    df_equity['Cumulative_PNL'] = df_equity['PNL_num'].cumsum()
-
-                    # Drawdown based on cumulative P&L only
-                    df_equity['Running_Max_PNL'] = df_equity['Cumulative_PNL'].cummax()
-                    df_equity['Drawdown_PNL'] = df_equity['Cumulative_PNL'] - df_equity['Running_Max_PNL']
-
-                    # Keep equity curve for display (capital + PnL)
                     initial_capital = pnl_metrics.get('initial_capital', 0.0)
-                    if initial_capital > 0:
-                        df_equity['Equity'] = initial_capital + df_equity['Cumulative_PNL']
-                    else:
-                        df_equity['Equity'] = df_equity['Cumulative_PNL']
+                    df_equity = build_pnl_equity_drawdown_df(
+                        filtered_df,
+                        date_col=date_col_pnl,
+                        col=PNL_COL,
+                        initial_capital=initial_capital
+                    )
+
+                    max_dd_value = float(df_equity['Drawdown_PNL'].min())
+                    max_dd_idx = int(df_equity['Drawdown_PNL'].idxmin())
+                    max_dd_date = df_equity.loc[max_dd_idx, date_col_pnl]
+                    max_dd_abs = abs(max_dd_value)
+                    max_dd_pct = abs(float(df_equity.loc[max_dd_idx, 'Drawdown_Pct']))
+                    peak_equity_at_dd = float(df_equity.loc[max_dd_idx, 'Running_Max_Equity'])
+                    peak_pnl_at_dd = float(df_equity.loc[max_dd_idx, 'Running_Max_PNL'])
+                    trough_equity = float(df_equity.loc[max_dd_idx, 'Equity'])
+                    peak_window = df_equity.iloc[:max_dd_idx + 1]
+                    peak_dd_idx = int((peak_window['Cumulative_PNL'] - peak_pnl_at_dd).abs().idxmin())
+                    peak_dd_date = df_equity.loc[peak_dd_idx, date_col_pnl]
+                    peak_dd_equity = float(df_equity.loc[peak_dd_idx, 'Equity'])
+
+                    equity_hover = np.column_stack((
+                        df_equity['Cumulative_PNL'],
+                        df_equity['Running_Max_Equity']
+                    ))
+                    drawdown_hover = np.column_stack((
+                        df_equity['Drawdown_PNL'].abs(),
+                        df_equity['Drawdown_Pct'].abs()
+                    ))
 
                     fig_equity = make_subplots(
-                        rows=2, cols=1, row_heights=[0.7, 0.3],
-                        subplot_titles=("💰 Equity Curve (Capital + P&L)", "📉 Equity Drawdown"),
-                        vertical_spacing=0.1
+                        rows=2, cols=1,
+                        row_heights=[0.66, 0.34],
+                        subplot_titles=("Equity Curve", "Drawdown"),
+                        vertical_spacing=0.07,
+                        shared_xaxes=True
                     )
+
+                    if peak_dd_date != max_dd_date:
+                        for chart_row in (1, 2):
+                            fig_equity.add_vrect(
+                                x0=peak_dd_date, x1=max_dd_date,
+                                fillcolor='rgba(239, 68, 68, 0.06)',
+                                line_width=0,
+                                layer='below',
+                                row=chart_row, col=1
+                            )
+
                     fig_equity.add_trace(
                         go.Scatter(
-                            x=df_equity[date_col_pnl], y=df_equity['Equity'],
-                            mode='lines', name='Equity Curve',
-                            line=dict(width=3, color=ANALYTICS_GRADIENT_GREEN[5]),
+                            x=df_equity[date_col_pnl],
+                            y=df_equity['Equity'],
+                            mode='lines',
+                            name='Equity',
+                            customdata=equity_hover,
+                            line=dict(width=2.8, color=PRIMARY_B, shape='spline'),
                             fill='tozeroy',
-                            hovertemplate='<b>Date</b>: %{x}<br><b>Equity</b>: ₹%{y:,.2f}<extra></extra>'
+                            fillcolor='rgba(45, 212, 191, 0.08)',
+                            hovertemplate=(
+                                '<b>%{x|%d %b %Y}</b><br>'
+                                'Equity: ₹%{y:,.0f}<br>'
+                                'Cumulative P&L: ₹%{customdata[0]:,.0f}<extra></extra>'
+                            )
                         ),
                         row=1, col=1
                     )
-                    fig_equity.add_hline(y=initial_capital if initial_capital > 0 else 0,
-                                         line_dash="dash", line_color=TEXT_MUTED, line_width=1,
-                                         annotation_text="Initial Capital", annotation_position="top left",
-                                         row=1, col=1)
-
-                    # Drawdown curve with Max Drawdown annotation
                     fig_equity.add_trace(
                         go.Scatter(
-                            x=df_equity[date_col_pnl], y=df_equity['Drawdown_PNL'],
-                            mode='lines', name='Drawdown',
-                            line=dict(color=ANALYTICS_GRADIENT_ORANGE[5], width=2),
+                            x=df_equity[date_col_pnl],
+                            y=df_equity['Running_Max_Equity'],
+                            mode='lines',
+                            name='Peak',
+                            line=dict(width=1.4, color='rgba(250, 204, 21, 0.55)', dash='dot'),
+                            hovertemplate='<b>%{x|%d %b %Y}</b><br>Peak: ₹%{y:,.0f}<extra></extra>'
+                        ),
+                        row=1, col=1
+                    )
+                    fig_equity.add_hline(
+                        y=initial_capital if initial_capital > 0 else 0,
+                        line_dash="dash",
+                        line_color='rgba(156, 163, 175, 0.35)',
+                        line_width=1,
+                        row=1, col=1
+                    )
+                    fig_equity.add_trace(
+                        go.Scatter(
+                            x=[peak_dd_date],
+                            y=[peak_dd_equity],
+                            mode='markers',
+                            name='Peak before DD',
+                            showlegend=False,
+                            marker=dict(size=8, color=ACCENT_Y, symbol='circle', line=dict(width=1, color=BG_END)),
+                            hovertemplate='<b>Peak</b><br>₹%{y:,.0f}<br>%{x|%d %b %Y}<extra></extra>'
+                        ),
+                        row=1, col=1
+                    )
+                    fig_equity.add_trace(
+                        go.Scatter(
+                            x=[max_dd_date],
+                            y=[trough_equity],
+                            mode='markers',
+                            name='DD trough',
+                            showlegend=False,
+                            marker=dict(size=9, color=LOSS_RED, symbol='circle', line=dict(width=1, color=BG_END)),
+                            hovertemplate='<b>Trough</b><br>₹%{y:,.0f}<br>%{x|%d %b %Y}<extra></extra>'
+                        ),
+                        row=1, col=1
+                    )
+
+                    fig_equity.add_trace(
+                        go.Scatter(
+                            x=df_equity[date_col_pnl],
+                            y=df_equity['Drawdown_PNL'],
+                            mode='lines',
+                            name='Drawdown',
+                            customdata=drawdown_hover,
+                            line=dict(color='#f97316', width=1.8, shape='spline'),
                             fill='tozeroy',
-                            hovertemplate='<b>Date</b>: %{x}<br><b>Drawdown</b>: ₹%{y:,.2f}<extra></extra>'
+                            fillcolor='rgba(249, 115, 22, 0.18)',
+                            hovertemplate=(
+                                '<b>%{x|%d %b %Y}</b><br>'
+                                'Down: ₹%{customdata[0]:,.0f}<br>'
+                                'DD: %{customdata[1]:.2f}%<extra></extra>'
+                            )
                         ),
                         row=2, col=1
                     )
-
-                    # Max drawdown annotation
-                    max_dd_value = df_equity['Drawdown_PNL'].min()  # Changed from Drawdown_Equity
-                    max_dd_idx = df_equity['Drawdown_PNL'].idxmin()  # Changed from Drawdown_Equity
-                    max_dd_date = df_equity.loc[max_dd_idx, date_col_pnl]
-
+                    fig_equity.add_hline(
+                        y=0,
+                        line_color='rgba(156, 163, 175, 0.35)',
+                        line_width=1,
+                        row=2, col=1
+                    )
+                    fig_equity.add_trace(
+                        go.Scatter(
+                            x=[max_dd_date],
+                            y=[max_dd_value],
+                            mode='markers',
+                            name='Max DD',
+                            showlegend=False,
+                            marker=dict(size=8, color=LOSS_RED, symbol='triangle-down', line=dict(width=1, color=BG_END)),
+                            hoverinfo='skip'
+                        ),
+                        row=2, col=1
+                    )
                     fig_equity.add_annotation(
-                        x=max_dd_date, y=max_dd_value,
-                        text=f"<b>Max Drawdown</b><br>₹{abs(max_dd_value):,.2f}<br>{max_dd_date.strftime('%Y-%m-%d')}",
+                        x=max_dd_date,
+                        y=max_dd_value,
+                        text=(
+                            f"<b>Peak</b> ₹{peak_equity_at_dd:,.0f}<br>"
+                            f"<b>Down</b> ₹{max_dd_abs:,.0f}<br>"
+                            f"<b>DD</b> {max_dd_pct:.1f}%"
+                        ),
                         showarrow=True,
-                        arrowhead=2,
-                        arrowsize=1,
-                        arrowwidth=2,
-                        arrowcolor=ANALYTICS_GRADIENT_ORANGE[6],
-                        ax=60, ay=-40,
-                        bgcolor=SURFACE_ALT,
-                        bordercolor=ANALYTICS_GRADIENT_ORANGE[5],
-                        borderwidth=2,
-                        borderpad=8,
-                        font=dict(size=12, color=TEXT_LIGHT, family="Arial Black"),
+                        arrowhead=0,
+                        arrowwidth=1.2,
+                        arrowcolor='rgba(249, 115, 22, 0.7)',
+                        ax=48,
+                        ay=-34,
+                        bgcolor='rgba(15, 23, 42, 0.86)',
+                        bordercolor='rgba(249, 115, 22, 0.45)',
+                        borderwidth=1,
+                        borderpad=6,
+                        font=dict(size=11, color=TEXT_LIGHT),
                         row=2, col=1
                     )
 
                     fig_equity.update_layout(
-                        title={'text': "🚀 Equity Curve with Capital-Aware Drawdown", 'x': 0.5, 'xanchor': 'center'},
-                        height=700, showlegend=True, hovermode='x unified'
+                        title={'text': "Equity & Drawdown", 'x': 0.01, 'xanchor': 'left', 'font': {'size': 18, 'color': TEXT_LIGHT}},
+                        height=720,
+                        showlegend=True,
+                        hovermode='x unified',
+                        legend=dict(
+                            orientation='h',
+                            yanchor='bottom',
+                            y=1.02,
+                            xanchor='right',
+                            x=1,
+                            bgcolor='rgba(0,0,0,0)',
+                            font=dict(size=11, color=TEXT_MUTED)
+                        ),
+                        margin=dict(l=64, r=34, t=72, b=42),
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)'
                     )
-                    fig_equity.update_xaxes(gridcolor='#374151', showgrid=True)
-                    fig_equity.update_yaxes(gridcolor='#374151', showgrid=True)
+                    fig_equity.update_xaxes(
+                        gridcolor='rgba(55, 65, 81, 0.35)',
+                        showgrid=True,
+                        zeroline=False,
+                        showline=False,
+                        row=1, col=1
+                    )
+                    fig_equity.update_xaxes(
+                        gridcolor='rgba(55, 65, 81, 0.35)',
+                        showgrid=True,
+                        zeroline=False,
+                        showline=False,
+                        row=2, col=1
+                    )
+                    fig_equity.update_yaxes(
+                        title_text='Equity (₹)',
+                        tickformat=',.0f',
+                        gridcolor='rgba(55, 65, 81, 0.4)',
+                        showgrid=True,
+                        zeroline=False,
+                        row=1, col=1
+                    )
+                    fig_equity.update_yaxes(
+                        title_text='Drawdown (₹)',
+                        tickformat=',.0f',
+                        gridcolor='rgba(55, 65, 81, 0.4)',
+                        showgrid=True,
+                        zeroline=False,
+                        row=2, col=1
+                    )
                     st.plotly_chart(fig_equity, use_container_width=True)
                     
                 else:
@@ -1377,6 +1761,7 @@ if selected_file_name:
                     )
                     fig_winloss.update_xaxes(gridcolor='#374151')
                     fig_winloss.update_yaxes(gridcolor='#374151', showgrid=True)
+                    style_chart(fig_winloss)
                     st.plotly_chart(fig_winloss, use_container_width=True)
 
             with perf_col2:
@@ -1396,6 +1781,7 @@ if selected_file_name:
                         xaxis=dict(gridcolor='#374151', showgrid=True),
                         yaxis=dict(gridcolor='#374151', showgrid=True)
                     )
+                    style_chart(fig_dist)
                     st.plotly_chart(fig_dist, use_container_width=True)
 
             if 'SCAN_NAME' in filtered_df.columns and PNL_COL in filtered_df.columns and not filtered_df.empty:
@@ -1417,6 +1803,7 @@ if selected_file_name:
                     xaxis=dict(gridcolor='#374151', showgrid=True),
                     yaxis=dict(gridcolor='#374151')
                 )
+                style_chart(fig_strategy_pnl)
                 st.plotly_chart(fig_strategy_pnl, use_container_width=True)
 
         # TAB 3: Trade Distribution
@@ -1471,6 +1858,7 @@ if selected_file_name:
                         yaxis=dict(gridcolor='#374151', showgrid=True)
                     )
 
+                    style_chart(fig_trade_dist)
                     st.plotly_chart(fig_trade_dist, use_container_width=True)
 
             with dist_col2:
@@ -1489,6 +1877,7 @@ if selected_file_name:
                         title={'text': "📈 Trade Type Distribution", 'x': 0.5, 'xanchor': 'center'},
                         height=450, showlegend=True
                     )
+                    style_chart(fig_trade_type)
                     st.plotly_chart(fig_trade_type, use_container_width=True)
 
             if PNL_COL in filtered_df.columns and not filtered_df.empty:
@@ -1554,6 +1943,7 @@ if selected_file_name:
                 )
                 fig_monthly.update_xaxes(gridcolor='#374151', showgrid=True)
                 fig_monthly.update_yaxes(gridcolor='#374151', showgrid=True)
+                style_chart(fig_monthly)
                 st.plotly_chart(fig_monthly, use_container_width=True)
 
                 # Daily P&L (Optional)
@@ -1575,6 +1965,7 @@ if selected_file_name:
                     yaxis=dict(gridcolor='#374151', showgrid=True),
                     hovermode='x unified'
                 )
+                style_chart(fig_daily)
                 st.plotly_chart(fig_daily, use_container_width=True)
             else:
                 st.info("No date column detected for time-based P&L analysis.")
@@ -1584,22 +1975,10 @@ st.markdown("---")
 st.markdown(f"""
 <div style='
     text-align: center;
-    padding: 28px;
-    background: linear-gradient(135deg, rgba(79, 172, 254, 0.10) 0%, rgba(0, 242, 254, 0.10) 100%);
-    border-radius: 14px;
-    margin-top: 10px;
-    border: 1px solid {BORDER_RGBA};
+    padding: 10px 0 4px 0;
+    margin-top: 4px;
 '>
-    <h3 style='
-        color:{TEXT_LIGHT};
-        font-size: 20px;
-        font-weight: 800;
-        margin-bottom: 6px;
-    '>📈 NeoTrader Analytics Dashboard</h3>
-    <p style='color: {TEXT_MUTED}; font-size: 12px; margin: 5px 0;'>
-        ⚡ Lightning-fast processing • 🔄 Real-time Drive sync • 📊 Neo-style analytics • 💾 Smart caching
-    </p>
-    <p style='color: {TEXT_MUTED}; font-size: 11px; margin-top: 8px;'>
+    <p style='color: {TEXT_MUTED}; font-size: 11px; margin: 0;'>
         Powered by Google Drive × Streamlit × Plotly
     </p>
 </div>
